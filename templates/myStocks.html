@@ -1,0 +1,54 @@
+{% extends 'commonElementsLayout.html' %}
+
+{% block content %}
+    <script type = "text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type = "text/javascript">
+        google.charts.load('current', {'packages':['corechart']})
+        google.charts.setOnLoadCallback(() => {
+            var data = '{{combinedInvestment}}'
+            createPieChart(data,'stockPieChart')
+        })
+    </script>
+    <script type="text/javascript">
+        window.onload = function() {
+            const userStocks = JSON.parse('{{ stocks | tojson}}');
+            let individualStocks=document.getElementById('individualStocks');
+            userStocks.forEach(stockData => {
+                stock = document.createElement('div');
+                stockData.Active ? stock.setAttribute("id",'activeStockData'):stock.setAttribute("id",'inactiveStockData');
+                
+                let stockName = document.createElement('p');
+                stockName.setAttribute("id","userStockName");
+                stockName.appendChild(document.createTextNode(stockData.StockName));
+
+                let stockUnits = document.createElement("p");
+                stockUnits.setAttribute("id","userStockUnits");
+                stockUnits.appendChild(document.createTextNode("Number of Units : "+stockData.Units));
+
+                let stockAmount = document.createElement('p');
+                stockAmount.setAttribute("id","userStockAmount");
+                stockAmount.appendChild(document.createTextNode("Current Stock Value: "+stockData.Amount));
+
+                stock.append(stockName,stockAmount,stockUnits);
+                stock.addEventListener("click",function() {
+                    let stockId=btoa(stockData.Id);
+                    window.location.href="/myinvestments/stocks/"+stockId;
+                });
+                individualStocks.appendChild(stock);
+                
+            });
+        }
+    </script>
+
+    <div id="addStocks">
+        <a id="addInvestmentButton" href="/myinvestments/stocks/addInvestment">ADD STOCK ENTRY</a>
+    </div>
+
+    <div id="allStocks">
+        <div id="stockPieChart" class="pieChart">
+        </div>
+    </div>
+
+    <div id="individualStocks">
+    </div>
+{% endblock %}

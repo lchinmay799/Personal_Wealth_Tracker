@@ -1,0 +1,56 @@
+{% extends 'commonElementsLayout.html' %}
+
+{% block content %}
+    <script type = "text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type = "text/javascript">
+        google.charts.load('current', {'packages':['corechart']})
+        google.charts.setOnLoadCallback(() => {
+            var data = '{{combinedInvestment}}'
+            createPieChart(data,'bankDepositPieChart')
+        })
+    </script>
+    <script type="text/javascript">
+        window.onload = function() {
+            const userDeposits = JSON.parse('{{ bankDeposits | tojson}}');
+            let individualBankDeposits=document.getElementById('individualBankDeposits');
+            userDeposits.forEach(depositData => {
+                deposit = document.createElement('div');
+                depositData.Active ? deposit.setAttribute("id",'activeBankDepositData'):deposit.setAttribute("id",'inactiveBankDepositData');
+                
+                
+                let bankName = document.createElement('p');
+                bankName.setAttribute("id","userDepositBankName");
+                bankName.appendChild(document.createTextNode(depositData.BankName));
+
+                let depositAmount = document.createElement('p');
+                depositAmount.setAttribute("id","userDepositAmount");
+                depositAmount.appendChild(document.createTextNode("Deposit Amount : "+depositData.Amount));
+
+                let maturityDate = document.createElement("p");
+                maturityDate.setAttribute("id","userDepositMaturityDate");
+                maturityDate.appendChild(document.createTextNode("Maturity Date : "+depositData.MaturityDate));
+
+                deposit.append(bankName,depositAmount,maturityDate);
+                deposit.addEventListener("click",function() {
+                    let bankInvestmentId=btoa(depositData.investmentId);
+                    window.location.href="/myinvestments/bankdeposits/"+bankInvestmentId;
+                });
+                individualBankDeposits.appendChild(deposit);
+                
+            });
+
+        }
+    </script>
+
+    <div id="addBankDeposits">
+        <a id="addInvestmentButton" href="/myinvestments/bankdeposits/addInvestment">ADD BANK DEPOSIT ENTRY</a>
+    </div>
+
+    <div id="allBankDeposits">
+        <div id="bankDepositPieChart" class="pieChart">
+        </div>
+    </div>
+
+    <div id="individualBankDeposits">
+    </div>
+{% endblock %}

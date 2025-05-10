@@ -1,0 +1,477 @@
+body {
+    margin: 0;
+    font-family: 'Poppins', sans-serif;
+    background: linear-gradient(white,grey,black);
+    color: #333;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+.navbar {
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+    padding: 10px 20px;
+    position: absolute;
+    top: 0;
+}
+
+.loginButton, .signupButton, .logoutButton, .submitButton, #description, #addInvestmentButton {
+    margin-left: 20px;
+    padding: 10px 20px;
+    font-size: 1em;
+    font-weight: bold;
+    color: white;
+    background: black;
+    border-radius: 25px;
+    text-decoration: none;
+    transition: background-color 0.5s ease;
+}
+
+.header_logo {
+    position: absolute;
+    left: 70px;
+}
+
+.loginButton:hover,.logoutButton:hover, .signupButton:hover, .submitButton:hover, #description:hover, #stockButton:hover,
+ #mutualFundButton:hover, #bankDepositsButton:hover, #addInvestmentButton:hover {
+    background-color: #bdc3c7;
+    color: black;
+}
+
+#appname {
+    text-align: center;
+    padding: 50px;
+}
+
+#description {
+    margin-top: 50px;
+}
+
+.submitButton {
+    width: 500px;
+    height: 50px;
+    font-size: 1.5em;
+    margin-top: 50px;
+    margin-left: 0;
+}
+
+.password, #username, #bankDepositAmount, #bankInterestRate, #bankName, #stockName, #mutualFundName, #mutualFundId, #stockUnits, #mutualFundAmount, #stockPrice, #mutualFundUnitPrice, #sipAmount{
+    background-color: transparent;
+    margin-top: 50px;
+    height: 40px;
+    width: 500px;
+    font-size: 1.3em;
+    color: black;
+}
+
+#stockName, #mutualFundName, #mutualFundId, #stockUnits, #mutualFundAmount, #stockPrice, #mutualFundUnitPrice, #sipAmount{
+    color: white;
+}
+
+#activeBankDepositData, #activeStockData, #activeMutualFundData{
+    justify-content: center;
+    flex-direction: column;
+    text-align: center;
+    color: green;
+    width: 1850px;
+    box-sizing: border-box;
+    background-color: rgb(8, 48, 8,0.2);
+    cursor: pointer;   
+}
+
+#activeBankDepositData:nth-child(-n+3), #activeStockData:nth-child(-n+3), #activeMutualFundData:nth-child(-n+3){
+    color: rgb(6, 78, 6);
+}
+
+#inactiveBankDepositData, #inactiveStockData, #inactiveMutualFundData{
+    justify-content: center;
+    flex-direction: column;
+    text-align: center;
+    color: red;
+    width: 1850px;
+    box-sizing: border-box;
+    background-color: rgba(63, 20, 20, 0.2);
+    cursor: pointer;
+}
+
+#inactiveBankDepositData:nth-child(-n+3), #inactiveStockData:nth-child(-n+3), #inactiveMutualFundData:nth-child(-n+3){
+    color: rgb(87, 15, 15);
+}
+
+#userDepositBankName, #userStockName, #userMutualFundName {
+    font-family: 'Times New Roman', Times, serif;
+    font-weight: 400;
+    font-size: 25px;
+    font-weight: bolder;
+}
+
+#userDepositAmount, #userDepositMaturityDate, #userStockAmount, #userMutualFundAmount, #userStockUnits, #userMutualFundUnits {
+    font-size: 20px;
+}
+
+#bankInterestRate,#bankDepositAmount, .calendar{
+    margin-top: 30px;
+}
+
+#bankInterestRate {
+    margin-left: 40px;
+    color: white;
+}
+
+.email {
+    background-color: transparent;
+    height: 40px;
+    width: 500px;
+    font-size: 1.3em;
+    color: white;
+}
+
+.updateInterestButton, .vestingInfoButton{
+    height: 40px;
+    position: relative;
+    display: inline-block;
+    width: 60px;
+}
+
+#updatenterestCheckbox, #vestingInfoCheckbox {
+    opacity: 0;
+    width: 0;
+    height: 0;
+} 
+
+.toggleButton {
+    cursor: pointer;
+    position: absolute;
+    cursor: pointer;
+    background-color: black;
+    transition: 0.5s;
+    border-radius: 30px;
+    width: 60px;
+    height: 30px;
+}
+
+.toggleButton::before {
+    position: absolute;
+    content: "";
+    height: 22px;
+    width: 22px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: 0.5s;
+    border-radius: 50%;
+}
+
+#updatenterestCheckbox:checked + .toggleButton, #vestingInfoCheckbox:checked + .toggleButton {
+    background-color: #4CAF50;
+}
+
+.toggleLabel, .updateInterestButton, .vestingInfoButton{
+    font-size: 1.2em;
+    vertical-align: middle;
+    color: burlywood;
+    font-weight: bold;
+}
+
+#updatenterestCheckbox:checked + .toggleButton, #vestingInfoCheckbox:checked + .toggleButton::before {
+    transform: translateX(30px);
+}
+
+#depositAmount,#currentAmount,#depositInvestedDate,#depositMaturityDate, .investedStockAmount, .investedMutualFundAmount,  #investedStockUnits, #investedMutualFundUnits, #currentStockPrice, #currentMutualFundPrice, #mutualFundUnitPrice, .vestedStock, .vestingStock{
+    font-size: 1.52em;
+    color: black;
+    font-family: Georgia, 'Times New Roman', Times, serif;
+    font-weight: bold;
+}
+
+.investedStockAmount, .investedMutualFundAmount, #investedStockUnits, #investedMutualFundUnits, #currentStockPrice, #currentMutualFundPrice, #mutualFundUnitPrice{
+    color: white;
+}
+
+.vestedStock {
+    color: rgb(4, 38, 4);
+} 
+
+.vestingStock{
+    color: yellow;
+}
+
+#depositBankName, #investedStockName, #investedMutualFundName{
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 2.2em;
+    font-weight: 600;
+    color: blue;
+    text-transform: uppercase;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+
+.bankInterestType, .calendarLabel, .interestCalculateType, .updateInterestButton, .vestingInfoButton, .stockExchange, .stockInvestmentType, .mutualFundInvestmentType{
+    display: inline-flex;
+    cursor: pointer;
+    font-size: 24px;
+    font-family: 'Times New Roman', Times, serif;
+    margin-top: 20px;
+    margin-left: 10px;
+    color: black;
+}
+
+#activeBankInvestment, #renewBankInvestment, #activeStockInvestment, #activeMutualFundInvestment{
+    font-size: large;
+    color: red;
+    font-weight: bolder;
+    position: absolute;
+    right: 10%;
+    font-family: Georgia, 'Times New Roman', Times, serif;
+}
+
+#activeStockInvestment {
+    bottom: 5px;
+}
+
+#renewBankInvestment{
+    color: green;
+}
+
+#monthlyInterestSimple, #monthlyInterestCompound, #sipInvestmentContainer{
+    margin-left: 40px;
+}
+
+#investedDate, #maturityDate, #sipDate, #vestingDate {
+    font-size: 1.3em;
+    margin-left: 20px;
+    background-color: grey;
+    width: 200px;
+    height: 40px;
+    font-size: 22px;
+    border-radius: 5px;
+}
+
+#simpleInterestContainer, #compoundInterestContainer, #compoundInterestJsonContainer, #sipInvestmentContainer, #oneTimeInvestmentContainer, #vestingRanges {
+    display: none;
+    margin-top: 20px;
+}
+
+#sipInvestmentContainer, #oneTimeInvestmentContainer, #vestingRanges {
+    margin-top: 0px;
+}
+
+#addButton, #removeButton {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    font-size: 1.5em;
+    text-align: center;
+    margin-top: 20px;
+}
+
+#vestingDate{
+    margin-top: 10px;
+}
+
+.compoundInterestRange, .vestingRange{
+    display: flex;
+    margin-left: 40px;
+}
+
+#vestingRanges {
+    flex-direction: column;
+    margin-bottom: 10px;
+}
+
+.commonString{
+    font-weight: bolder;
+    font-family: 'Times New Roman', Times, serif;
+    margin-left: 30px;
+    margin-right: 30px;
+    margin-top: 30px;
+    align-items: center;
+    text-align: center;
+    color: black;
+}
+
+.currency, .inrCurrency {
+    margin-left: 15px;
+    margin-right: 0px;
+    margin-top: 0px;
+    display: inline-block;
+    font-size: 1.8em;
+}
+
+#inrAmount{
+    display: none;
+}
+
+#addButton{
+    background-color: black;
+    margin-left: 40px;
+    color: white;
+}
+
+#removeButton{
+    background-color: white;
+    margin-left: 20px;
+    color: black;
+}
+
+#resetPassword {
+    color: wheat;
+    margin-top: 30px;
+    margin-left: 350px;
+    display: inline-block;
+}
+
+input[type="radio"] {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    width: 20px; 
+    height: 20px; 
+    border-radius: 50%; 
+    border: 4px solid white; 
+    outline: none;
+    position: relative;
+}
+
+input[type="radio"]:focus {
+    outline: max(4px, 0.15em) solid black;
+    outline-offset: max(2px, 0.15em);
+}
+
+input[type="radio"]:checked::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 10px;
+    height: 10px;
+    background-color: black;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.notice {
+    color: red;
+    font-size: 1.5em;
+    font-family: 'Times New Roman', Times, serif;
+    font-weight: 300;
+}
+
+.compoundInterestField, .interestField, .vestingUnitField {
+    width: 100px;
+    height: 30px;
+    font-size: 20px;
+    margin-top: 20px;
+    margin-left: 10px;
+}
+
+#title {
+    font-size: 50px;
+    font-weight: 700;
+    letter-spacing: 12px;
+    margin-bottom: 15px;
+    font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+    animation: fontColorChange 4s linear  infinite;
+}
+
+#investmentbar, #addBankDeposits, #addStocks, #addMutualFunds {
+    margin: 0;
+    position: absolute;
+    top: 150px;
+    display: flex;
+    width: 100%;
+}
+
+/* #bankDepositPieChart {
+    border: 5px solid #4CAF50;
+    border-radius: 25px;
+    box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.3);
+    padding: 10px;
+    width: 700px;
+    height: 700px;
+} */
+
+#allBankDeposits, #allStocks, #allMutualFunds, #combinedInvestments {
+    position:relative;
+    margin-top: 150px;
+}
+
+#stockButton, #mutualFundButton, #bankDepositsButton {
+    background-color: black;
+    color: white;
+    padding: 10px;
+    margin: 10px;
+    flex: 1;
+    text-decoration: none;
+    transition: background-color 0.5s ease;
+    font-weight: bold;
+    font-size: 1.5em;
+    height: 50px;
+    text-align: center;
+}
+
+#stockInformation, #mutualFundInformation{
+    position: relative;
+    margin-top: 150px;
+    display: none;
+}
+
+.stockMFInformation{
+    display: flex;
+    flex-direction: row;
+    gap: 50px;
+}
+
+#stockData, #mutualFundData, #stockMfInfoCharts {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#stockTrendButtons, #mutualFundTrendButtons{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 40px;
+}
+
+#addInvestmentButton {
+    position: relative;
+    margin-left: auto;
+    margin-right: 50px;
+    width: 400px;
+    height: 40px;
+    font-size: 1.5em;
+}
+
+@keyframes fontColorChange {
+    0% {color: black;}
+    25% {color: gray;}
+    50% {color: white;}
+    75% {color: gray;}
+    100% {color: black;}
+}
+
+@media (max-width: 768px) {
+    #title {
+        font-size: 2.5em;
+    }
+
+    #description {
+        font-size: 1.2em;
+    }
+
+    .submitButton {
+        font-size: 1.7em;
+    }
+
+    .navbar a {
+        font-size: 0.9em;
+        padding: 8px 15px;
+    }
+}

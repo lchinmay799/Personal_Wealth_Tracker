@@ -1,0 +1,54 @@
+{% extends 'commonElementsLayout.html' %}
+
+{% block content %}
+    <script type = "text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type = "text/javascript">
+        google.charts.load('current', {'packages':['corechart']})
+        google.charts.setOnLoadCallback(() => {
+            var data = '{{combinedInvestment}}'
+            createPieChart(data,'mutualFundPieChart')
+        })
+    </script>
+    <script type="text/javascript">
+        window.onload = function() {
+            const userMutualFunds = JSON.parse('{{ mutualFunds | tojson}}');
+            let individualMutualFunds=document.getElementById('individualMutualFunds');
+            userMutualFunds.forEach(mutualFundData => {
+                mutualFund = document.createElement('div');
+                mutualFundData.Active ? mutualFund.setAttribute("id",'activeMutualFundData'):mutualFund.setAttribute("id",'inactiveMutualFundData');
+                
+                let mutualFundName = document.createElement('p');
+                mutualFundName.setAttribute("id","userMutualFundName");
+                mutualFundName.appendChild(document.createTextNode(mutualFundData.Scheme));
+
+                let mutualFundUnits = document.createElement("p");
+                mutualFundUnits.setAttribute("id","userMutualFundUnits");
+                mutualFundUnits.appendChild(document.createTextNode("Number of Units : "+mutualFundData.Units));
+
+                let mutualFundAmount = document.createElement('p');
+                mutualFundAmount.setAttribute("id","userMutualFundAmount");
+                mutualFundAmount.appendChild(document.createTextNode("Current Mutual Fund Value: "+mutualFundData.Amount));
+
+                mutualFund.append(mutualFundName,mutualFundAmount,mutualFundUnits);
+                mutualFund.addEventListener("click",function() {
+                    let mutualFundId=btoa(mutualFundData.Id);
+                    window.location.href="/myinvestments/mutualfunds/"+mutualFundId;
+                });
+                individualMutualFunds.appendChild(mutualFund);
+                
+            });
+        }
+    </script>
+
+    <div id="addMutualFunds">
+        <a id="addInvestmentButton" href="/myinvestments/mutualfunds/addInvestment">ADD MUTUAL FUND ENTRY</a>
+    </div>
+
+    <div id="allMutualFunds">
+        <div id="mutualFundPieChart" class="pieChart">
+        </div>
+    </div>
+
+    <div id="individualMutualFunds">
+    </div>
+{% endblock %}

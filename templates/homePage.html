@@ -1,0 +1,25 @@
+{% extends "commonElementsLayout.html" %}
+{% block navigation %}
+    {% if not logged_in %}
+        <div class="navbar">
+            <a class="header_logo" href="/"><img src="{{url_for('static',filename='header_logo.webp')}}" width="50px" height="40px"></a>
+            <a class="loginButton" href="/login">LOG IN</a>
+            <a class="signupButton" href="/signup">SIGN UP</a>
+        </div>
+    {% else %}
+        <div class="navbar">
+            <a class="header_logo" href="/"><img src="{{url_for('static',filename='header_logo.webp')}}" width="50px" height="40px"></a>
+            <a class="logoutButton" href="/logout">LOG OUT</a>
+        </div>
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+    <div id="appname">
+        <img src="{{url_for('static',filename='logo.webp')}}" width="200px" height="200px">
+        <header>
+            <h1 id="title">PERSONAL WEALTH TRACKER</h1>
+            <a id="description" href="/myinvestments">TRACK YOUR FINANCES AND INVEST SMARTER</a>
+        </header>
+    </div>
+{% endblock %}

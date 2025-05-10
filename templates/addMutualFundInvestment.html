@@ -1,0 +1,56 @@
+{% extends 'commonElementsLayout.html' %}
+{% block content %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/date-fns@2.30.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0"></script>
+    <script>
+        window.onload = function() {
+            document.getElementById('mutualFundId').addEventListener("blur", function() {
+                searchMutualFund("yearly");
+            });
+        }
+    </script>
+
+    <div class="notice">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category,notice in messages %}
+                    <marquee>
+                        <p class="notice">{{notice}}</p>
+                    </marquee>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+    
+    <div id="mutualFundInformation">
+        <div class="lineChart" id="mutualFundInfoLineChart">
+            <canvas id="mutualFundLineChart" height="600" width="1400"></canvas>
+        </div>
+        <div id="mutualFundTrendButtons">
+            <button class = "submitButton" onclick="searchMutualFund('daily')">Daily</button>
+            <button class = "submitButton" onclick="searchMutualFund('monthly')">Monthly</button>
+            <button class = "submitButton" onclick="searchMutualFund('yearly')">Yearly</button>
+        </div>
+    </div>
+
+    <div id="newInvestment">
+        <form method="post" action="/myinvestments/mutualfunds/addInvestment/addMutualFundInvestment">
+            <input type="text" id="mutualFundName" name="mutualFundName" placeholder="Enter the MutualFund Name" required><br>
+            <input type="text" id="mutualFundId" name="mutualFundId" placeholder="Enter the Mutual Fund Scheme ID" required><br>
+            <a id = "resetPassword" href="https://www.mfapi.in/" target="_blank">Get the Mutual Fund Scheme Name and ID From Here</a><br>
+            <input type="radio" name = "mutualFundInvestmentType" value="SIP" id = "sipMutualFund" onclick="isSip(true)"><label for="sipMutualFund" class = "mutualFundInvestmentType">SIP</label>
+            <input type="radio" name = "mutualFundInvestmentType" value="One Time" id = "oneTimeMutualFund" required onclick="isSip(false)"><label for="oneTimeMutualFund" class = "mutualFundInvestmentType">ONE TIME</label><br>
+            <div id="sipInvestmentContainer">
+                <input type="number" id="sipAmount" name="sipAmount" placeholder="Enter the SIP Amount" step="1" min="0" required class="sipInfoField"><p class="commonString currency" style="color: white;">$</p><br>
+                <label for = "sipDate" class="calendarLabel" style="color: white;">SIP Date</label><input type="date" name = "sipDate"  id ="sipDate" class="sipInfoField" required>
+            </div>
+            <div id="oneTimeInvestmentContainer">
+                <input type="number" id="mutualFundAmount" name="mutualFundAmount" placeholder="Enter the Amount" step="1" min="0" required class="oteInfoField"><br>
+                <input type="number" id="mutualFundUnitPrice" name="mutualFundUnitPrice" placeholder="Enter the Purchase Price" step="0.01" min="0" required class="oteInfoField"><p class="commonString currency" style="color: white;">$</p><br>
+            </div>
+            <label for = "investedDate" class="calendarLabel" style="color: white;">Invested Date</label><input type="date" name = "investedDate"  id ="investedDate" required><br>
+            <input class = "submitButton" type="submit" value="SUBMIT">
+        </form>
+    </div>
+{% endblock %}

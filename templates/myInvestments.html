@@ -1,0 +1,22 @@
+{% extends 'commonElementsLayout.html' %}
+{% block content %}
+    <script type = "text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type = "text/javascript">
+        google.charts.load('current', {'packages':['corechart']})
+        google.charts.setOnLoadCallback(() => {
+            var data = '{{combinedInvestment}}'
+            createPieChart(data,'investmentPieChart')
+        })
+    </script>
+
+    <div id="investmentbar">
+        <a href="/myinvestments/stocks" id="stockButton">STOCKS</a>
+        <a href="/myinvestments/mutualfunds" id="mutualFundButton">MUTUAL FUNDS</a>
+        <a href="/myinvestments/bankdeposits" id="bankDepositsButton">BANK DEPOSITS</a>
+    </div>
+    <div id="combinedInvestments">
+        <div id="investmentPieChart" class="pieChart">
+            
+        </div>
+    </div>
+{% endblock %}

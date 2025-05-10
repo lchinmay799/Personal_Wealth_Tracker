@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Personal Wealth Tracker</title>
+        <link rel="stylesheet" href=" {{ url_for('static',filename = 'style.css')}}">
+        <script src="{{ url_for('static',filename = 'javascript_utility.js')}}"></script>
+    </head>
+    <body>
+        {% block navigation %}
+                <div class="navbar">
+                    <a class="header_logo" href="/"><img src="{{url_for('static',filename='header_logo.webp')}}" width="50px" height="40px"></a>
+                    <a class="logoutButton" href="/logout">LOG OUT</a>
+                </div>
+        {% endblock %}
+        {% block content %}
+            
+        {% endblock %}
+    </body>
+</html>

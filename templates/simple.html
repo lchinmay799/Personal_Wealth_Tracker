@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interest Calculator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .compound-fields {
+            margin-top: 10px;
+        }
+
+        .field-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .field-group input {
+            padding: 5px;
+            width: 80px;
+        }
+
+        .action-btn {
+            padding: 5px 10px;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            border-radius: 5px;
+        }
+
+        .add-btn {
+            background-color: #007bff;
+        }
+
+        .remove-btn {
+            background-color: red;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Interest Type</h2>
+    <label>
+        <input type="radio" name="interest" value="simple" onclick="toggleCompoundFields(false)" checked> Simple Interest
+    </label>
+    <label>
+        <input type="radio" name="interest" value="compound" onclick="toggleCompoundFields(true)"> Compound Interest
+    </label>
+
+    <div id="compound-section" class="hidden">
+        <h3>Compound Interest Details</h3>
+        <div id="compound-fields" class="compound-fields">
+            <div class="field-group">
+                <input type="number" placeholder="From Day" class="from-day">
+                <input type="number" placeholder="End Day" class="end-day">
+                <input type="number" placeholder="Percent" class="percent">
+                <button class="action-btn add-btn" onclick="addFields(this)">+</button>
+                <button class="action-btn remove-btn" onclick="removeField(this)">-</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleCompoundFields(show) {
+            document.getElementById("compound-section").style.display = show ? "block" : "none";
+        }
+
+        function addFields(button) {
+            let container = document.getElementById("compound-fields");
+
+            let fieldGroup = document.createElement("div");
+            fieldGroup.classList.add("field-group");
+
+            fieldGroup.innerHTML = `
+                <input type="number" placeholder="From Day" class="from-day">
+                <input type="number" placeholder="End Day" class="end-day">
+                <input type="number" placeholder="Percent" class="percent">
+                <button class="action-btn add-btn" onclick="addFields(this)">+</button>
+                <button class="action-btn remove-btn" onclick="removeField(this)">-</button>
+            `;
+
+            container.appendChild(fieldGroup);
+        }
+
+        function removeField(button) {
+            if (document.querySelectorAll(".field-group").length > 1) {
+                button.parentElement.remove();
+            }
+        }
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,70 @@
+{% extends 'commonElementsLayout.html' %}
+{% block content %}
+    <div class="notice">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category,notice in messages %}
+                    <marquee>
+                        <p class="notice">{{notice}}</p>
+                    </marquee>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+    
+    <div id="newInvestment">
+        <form method="post" action="/myinvestments/bankdeposits/addInvestment/addBankDeposit">
+            <div id="renewBankInvestment">
+                <input type="checkbox" id = "autoRenewCheckbox" ><label for="autoRenewCheckbox">SET AUTO RENEWAL</label>
+            </div>
+
+            <input type="text" name="Bank" id="bankName" placeholder="Enter the Bank Name" maxlength="50" required><br>
+            <input type="number" name="Amount" min="0" id = "bankDepositAmount" placeholder="Enter the Deposit Amount" required><br>
+            
+            <input type="radio" name = "InterestType" value="SIMPLE" id = "simpleInterest" onclick="isCompoundInterestJson(false,true)" required><label for="simpleInterest" class = "bankInterestType">SIMPLE INTEREST</label><br>
+            <div id = "simpleInterestContainer">
+                <input type="radio" name = "simpleInterestCalculateType" value="MONTHLY" id = "monthlyInterestSimple" ><label for="monthlyInterestSimple" class = "interestCalculateType">Monthly</label>
+                <input type="radio" name = "simpleInterestCalculateType" value="QUARTERLY" id = "quarterlyInterestSimple"><label for="quarterlyInterestSimple" class = "interestCalculateType">Quarterly</label>
+                <input type="radio" name = "simpleInterestCalculateType" value="YEARLY" id = "yearlyInterestSimple" checked><label for="yearlyInterestSimple" class = "interestCalculateType">Yearly</label><br>
+                <input type="number" name = "InterestRate" step="0.01" min="0" id = "bankInterestRate" placeholder="Enter the Rate of Interest" class="simpleInterestField" required>
+            </div>
+            
+            <input type="radio" name = "InterestType" value="COMPOUND" id = "compoundInterest" onclick="isCompoundInterestJson(true,false)"><label for="compoundInterest" class = "bankInterestType">COMPOUND INTEREST</label><br>
+            <div id = "compoundInterestJsonContainer">
+
+                <div id="compoundInterestSelectionContainer">
+                    <input type="radio" name = "compoundInterestCalculateType" value="MONTHLY" id = "monthlyInterestCompound" onclick="isCompoundInterest(true); isCompoundInterestJson(true,false);"><label for="monthlyInterestCompound" class = "interestCalculateType">Monthly</label>
+                    <input type="radio" name = "compoundInterestCalculateType" value="QUARTERLY" id = "quarterlyInterestCompound" onclick="isCompoundInterest(true); isCompoundInterestJson(true,false)"><label for="quarterlyInterestCompound" class = "interestCalculateType">Quarterly</label>
+                    <input type="radio" name = "compoundInterestCalculateType" value="YEARLY" id = "yearlyInterestCompound" onclick="isCompoundInterest(true); isCompoundInterestJson(true,false)" checked><label for="yearlyInterestCompound" class = "interestCalculateType">Yearly</label>
+                    <input type="radio" name = "compoundInterestCalculateType" value="NONE" id = "notCompoundInterestCompound" onclick="isCompoundInterest(false); isCompoundInterestJson(true,false,true)"><label for="notCompoundInterestCompound" class = "interestCalculateType">None</label>
+                </div>
+
+                <div id = "compoundInterestContainer">
+                    <input type="number" name = "InterestRate" step="0.01" min="0" id = "bankInterestRate" placeholder="Enter the Rate of Interest" class = "compoundInterestField" required><br>
+                </div>
+                
+                <div class="compoundInterestRange">
+                    <input type="number" name = "startyears[]" step="1" min="0" class = "compoundInterestField" placeholder="Years" required>
+                    <input type="number" name = "startmonths[]" step="1" min="0" max="12" class = "compoundInterestField" placeholder="Months" required>
+                    <input type="number" name = "startdays[]" step="1" min="0" max="31" class = "compoundInterestField" placeholder="Days" required>
+                    <p class="commonString">TO</p>
+                    <input type="number" name = "endyears[]" step="1" min="0" class = "compoundInterestField" placeholder="Years" required>
+                    <input type="number" name = "endmonths[]" step="1" min="0" max="12" class = "compoundInterestField" placeholder="Months" required>
+                    <input type="number" name = "enddays[]" step="1" min="0" max="31"  class = "compoundInterestField" placeholder="Days" required>
+                    <p class="commonString">:</p>
+                    <input type="number" name = "compoundInterestRate[]" step="0.01" min="0" class = "compoundInterestField" placeholder="%" required>
+                    <input type="button" id="addButton" onclick="addCompoundInterestField()" value="+">
+                    <input type="button" id="removeButton" onclick="removeCompoundInterestField(this)" value="-">
+                </div>
+            </div>
+            
+            <label for = "investedDate" class="calendarLabel">Invested Date</label><input type="date" name = "InvestedDate"  id ="investedDate" required><br>
+            <label for = "maturityDate" class="calendarLabel">Maturity After</label>
+            <!-- <input type="date" name="MaturityDate" id = "maturityDate"><br> -->
+            <input type="number" name = "maturityYears" step="1" min="0" class = "interestField" placeholder="Years" required>
+            <input type="number" name = "maturityMonths" step="1" min="0" max="12" class = "interestField" placeholder="Months" required>
+            <input type="number" name = "maturityDays" step="1" min="0" max="31" class = "interestField" placeholder="Days" required><br>
+            <input class = "submitButton" type="submit" value="SUBMIT">
+        </form>
+    </div>
+{% endblock %}

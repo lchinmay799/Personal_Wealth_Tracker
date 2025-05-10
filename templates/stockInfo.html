@@ -1,0 +1,90 @@
+{% extends 'commonElementsLayout.html' %}
+{% block content %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/date-fns@2.30.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0"></script>
+
+    <script>
+        function loadStockChart(period){
+            let stockName = document.getElementById('investedStockName').innerText;
+            document.getElementById("stockInformation").style.display="block";
+            if (stockName.includes(".")) {
+                [stockName,stockExchange] = stockName.split(".");
+                stockExchange=".".concat(stockExchange);
+            }
+            else{
+                stockExchange="";
+            }
+
+            let isVestingStock = {{vestingStock | tojson}};
+            if (isVestingStock){
+                document.getElementById('stockMfInfoCharts').style.display="flex";
+                let data = JSON.parse('{{combinedStocksInfo | tojson}}');
+                let date =Object.keys(data.vestingInfo);
+                let units=Object.values(data.vestingInfo);
+                vestingLineChart=createVestingChart("vestingLineChart",date,units,vestingLineChart);
+            }
+            
+            isForeignCurrency=setStockInfo(stockExchange,stockName,period).then(isForeignCurrency => {
+                if (isForeignCurrency){
+                    document.getElementById("inrAmount").style.display="block";
+                }
+            });
+        }
+        window.addEventListener("DOMContentLoaded", () => loadStockChart("yearly"));
+    </script>
+
+    <div class="notice">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category,notice in messages %}
+                    <marquee>
+                        <p class="notice">{{notice}}</p>
+                    </marquee>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <div id="stockInformation">
+        <div class="lineChart" id="stockInfoLineChart">
+            <canvas id="stockLineChart" height="600" width="1400"></canvas>
+        </div>
+        <div id="stockTrendButtons">
+            <button class = "submitButton" onclick="loadStockChart('daily')">Daily</button>
+            <button class = "submitButton" onclick="loadStockChart('monthly')">Monthly</button>
+            <button class = "submitButton" onclick="loadStockChart('yearly')">Yearly</button>
+        </div>
+        <p id="investedStockName">{{combinedStocksInfo.StockName}}</p>
+    </div>
+    <div class="stockMFInformation">
+        <div id="stockData">
+            <form method="post" action="/myinvestments/stocks/addInvestment/updateStockInvestment">
+                <div id="activeStockInvestment">
+                    {% if combinedStocksInfo.Active %}
+                        <input type="checkbox" id = "activeCheckBox" onclick="markInvestmentAsInactive(this,{{ combinedStocksInfo.Id }},'stocks')"><label for="activeCheckBox">MARK AS INACTIVE</label>
+                    {% endif %}
+                </div>
+    
+                <p id="currentStockPrice">Current Stock Price : <input type="number" id="stockPrice" name="stockPrice" readonly><span class="commonString currency" style="color: white; font-size: 1.4em;">$</span></p><br>
+                <p class="investedStockAmount" style="color: white;">Originally Invested Amount : {{combinedStocksInfo.Amount}}<span class="commonString currency" style="color: white; font-size: 1.4em;">$</span></p>
+                {% if combinedStocksInfo.currentAmount > combinedStocksInfo.Amount %}
+                    {% set color="green" %}
+                {% elif combinedStocksInfo.currentAmount < combinedStocksInfo.Amount %}
+                    {% set color="red" %}
+                {% else %}
+                    {% set color="white" %}
+                {% endif %}
+                <p class="investedStockAmount" style="color: {{ color }};">Current Stock Amount : {{combinedStocksInfo.currentAmount}}<span class="commonString currency" style="color: {{ color }}; font-size: 1.4em;">$</span></p>
+                <p class="investedStockAmount" id="inrAmount" style="color: {{ color }};"> Invested Amount (Indian Rupees): {{combinedStocksInfo.INRAmount}}<span class="commonString inrCurrency" style="color: {{ color }}; font-size: 1.4em;"> ₹</span></p>
+                <p id="investedStockUnits">Number of Units : {{combinedStocksInfo.Units}}</p>
+            </form>
+        </div>
+        <div id="stockMfInfoCharts" style="display: none;">
+            <div class="lineChart" id="vestingInfoLineChart">
+                <canvas id="vestingLineChart" height="600" width="800"></canvas>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}

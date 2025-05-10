@@ -1,0 +1,101 @@
+{% extends 'commonElementsLayout.html' %}
+{% block content %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/date-fns@2.30.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0"></script>
+
+    <script>
+        function loadMutualFundChart(period){
+            let mutualFundName = document.getElementById('investedMutualFundName').innerText;
+            let mutualFundId = document.getElementById('mutualFundId').value;
+            setMutualFundInfo(mutualFundName,mutualFundId,period);
+            document.getElementById("mutualFundInformation").style.display="block";
+
+            document.getElementById('stockMfInfoCharts').style.display="flex";
+            let data = JSON.parse('{{combinedMutualFundsInfo | tojson}}');
+            let date =Object.keys(data.investmentInfo);
+            let priceData=Object.values(data.investmentInfo);
+            let investedUnits=[priceData[0][0],priceData[1][0]]
+            let investedAmount=[priceData[0][1],priceData[1][1]]
+            let currentAmount=data.currentValue.Amount;
+            if (priceData.length>2){
+                for (let i=1;i<priceData.length;i++){
+                    investedAmount.push(investedAmount[i-1]+priceData[i][1]);
+                    investedUnits.push(investedUnits[i-1]+priceData[i][0]);
+                }
+            }
+            mutualFundTrackerLineChart=createLineChart("mutualFundTrackerLineChart",
+                                        {"Label":"DATE","Data":date},
+                                        [{"Label":"Invested Amount","Data":investedAmount,"Color":"blue"},
+                                        {"Label":"Current Value","Data":currentAmount,"Color":"green"}],
+                                        mutualFundTrackerLineChart,
+                                        "month",
+                                        1);
+            mutualFundTrackerLineChart.data.datasets[0].segment={
+                borderWidth: 4,
+                pointRadius: 4,
+                pointBackgroundColor: 'red'
+            }
+            mutualFundTrackerLineChart.data.datasets[1].segment={
+                borderWidth: 4,
+                pointRadius: 4,
+                pointBackgroundColor: 'red'
+            }
+        mutualFundTrackerLineChart.update();
+        }
+        window.addEventListener("DOMContentLoaded", () => loadMutualFundChart("yearly"));
+    </script>
+
+    <div class="notice">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category,notice in messages %}
+                    <marquee>
+                        <p class="notice">{{notice}}</p>
+                    </marquee>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <div id="mutualFundInformation">
+        <div class="lineChart" id="mutualFundInfoLineChart">
+            <canvas id="mutualFundLineChart" height="600" width="1400"></canvas>
+        </div>
+        <div id="mutualFundTrendButtons">
+            <button class = "submitButton" onclick="loadMutualFundChart('daily')">Daily</button>
+            <button class = "submitButton" onclick="loadMutualFundChart('monthly')">Monthly</button>
+            <button class = "submitButton" onclick="loadMutualFundChart('yearly')">Yearly</button>
+        </div>
+        <p id="investedMutualFundName">{{combinedMutualFundsInfo.Scheme}}</p>
+    </div>
+    <div class="stockMFInformation">
+        <div id="mutualFundData">
+            <form method="post" action="/myinvestments/mutualfunds/addInvestment/updateMutualFundInvestment">
+                <div id="activeMutualFundInvestment">
+                    {% if combinedMutualFundsInfo.Active %}
+                        <input type="checkbox" id = "activeCheckBox" onclick="markInvestmentAsInactive(this,{{ combinedMutualFundsInfo.Id }},'mutualfunds')"><label for="activeCheckBox">MARK AS INACTIVE</label>
+                    {% endif %}
+                </div>
+                <input type="hidden" id="mutualFundId" value="{{ combinedMutualFundsInfo.SchemeId }}" name="mutualFundId">
+                <p id="currentMutualFundPrice">Current Mutual Fund NAV : <input type="number" id="mutualFundUnitPrice" readonly><span class="commonString currency" style="color: white; font-size: 1.4em;">₹</span></p><br>
+                <p class="investedMutualFundAmount" style="color: white;">Originally Invested Amount : {{combinedMutualFundsInfo.Amount}}<span class="commonString currency" style="color: white; font-size: 1.4em;">₹</span></p>
+                {% if combinedMutualFundsInfo.currentAmount > combinedMutualFundsInfo.Amount %}
+                    {% set color="green" %}
+                {% elif combinedMutualFundsInfo.currentAmount < combinedMutualFundsInfo.Amount %}
+                    {% set color="red" %}
+                {% else %}
+                    {% set color="white" %}
+                {% endif %}
+                <p class="investedMutualFundAmount" style="color: {{ color }};">Current Mutual Fund Amount : {{combinedMutualFundsInfo.currentAmount}}<span class="commonString currency" style="color: {{ color }}; font-size: 1.4em;">₹</span></p>
+                <p id="investedMutualFundUnits">Number of Units : {{combinedMutualFundsInfo.Units}}</p>
+            </form>
+        </div>
+        <div id="stockMfInfoCharts">
+            <div class="lineChart" id="mutualFundInfoLineChart">
+                <canvas id="mutualFundTrackerLineChart" height="600" width="800"></canvas>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}

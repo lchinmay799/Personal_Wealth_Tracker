@@ -1,0 +1,78 @@
+{% extends 'commonElementsLayout.html' %}
+{% block content %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/date-fns@2.30.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0"></script>
+    <script>
+        window.onload = function() {
+            document.getElementById('stockName').addEventListener("blur", function() {
+                searchStock("yearly");
+            });
+        }
+    </script>
+
+    <div class="notice">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category,notice in messages %}
+                    <marquee>
+                        <p class="notice">{{notice}}</p>
+                    </marquee>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+    
+    <div id="stockInformation">
+        <div class="lineChart" id="stockInfoLineChart">
+            <canvas id="stockLineChart" height="600" width="1400"></canvas>
+        </div>
+        <div id="stockTrendButtons">
+            <button class = "submitButton" onclick="searchStock('daily')">Daily</button>
+            <button class = "submitButton" onclick="searchStock('monthly')">Monthly</button>
+            <button class = "submitButton" onclick="searchStock('yearly')">Yearly</button>
+        </div>
+    </div>
+
+    <div id="newInvestment">
+        <form method="post" action="/myinvestments/stocks/addInvestment/addStockInvestment">
+            <input type="radio" name="stockExchange" value="" id="usStockExchange" checked><label class="stockExchange" for="usStockExchange">United States Stock Exchange (USA)</label><br>
+            <input type="radio" name="stockExchange" value=".LON" id="ukStockExchange"><label class="stockExchange" for="ukStockExchange">London Stock Exchange (UK)</label><br>
+            <input type="radio" name="stockExchange" value=".TRT" id="canadaStockExchange"><label class="stockExchange" for="canadaStockExchange">Toronto Stock Exchange (CANADA)</label>
+            <input type="radio" name="stockExchange" value=".TRV" id="canada2StockExchange"><label class="stockExchange" for="canada2StockExchange">Toronto Venture Exchange (CANADA)</label><br>
+            <input type="radio" name="stockExchange" value=".DEX" id="germanyStockExchange"><label class="stockExchange" for="germanyStockExchange">XETRA (GERMANY)</label><br>
+            <input type="radio" name="stockExchange" value=".BSE" id="indiaStockExchange"><label class="stockExchange" for="indiaStockExchange">BSE (INDIA)</label><br>
+            <input type="radio" name="stockExchange" value=".SHH" id="shanghaiStockExchange"><label class="stockExchange" for="shanghaiStockExchange">Shanghai Stock Exchange (CHINA)</label>
+            <input type="radio" name="stockExchange" value=".SHZ" id="shenzhenStockExchange"><label class="stockExchange" for="shenzhenStockExchange">Shenzhen Venture Exchange (CHINA)</label><br>
+
+            <input type="text" id="stockName" name="stockName" placeholder="Enter the Stock Name" required><br>
+            <input type="radio" name = "stockInvestmentType" value="SIP" id = "sipStock" onclick="isSip(true)"><label for="sipStock" class = "stockInvestmentType">SIP</label>
+            <input type="radio" name = "stockInvestmentType" value="One Time" id = "oneTimeStock" required onclick="isSip(false)"><label for="oneTimeStock" class = "stockInvestmentType">ONE TIME</label><br>
+            <div id="sipInvestmentContainer">
+                <input type="number" id="sipAmount" name="sipAmount" placeholder="Enter the SIP Amount" step="1" min="0" required class="sipInfoField"><p class="commonString currency" style="color: white;">$</p><br>
+                <label for = "sipDate" class="calendarLabel" style="color: white;">SIP Date</label><input type="date" name = "sipDate"  id ="sipDate" class="sipInfoField" required>
+            </div>
+            <div id="oneTimeInvestmentContainer">
+                <input type="number" id="stockUnits" name="stockUnits" placeholder="Enter the Number of Units" step="1" min="0" required class="oteInfoField"><br>
+                <input type="number" id="stockPrice" name="stockPrice" placeholder="Enter the Purchase Price" step="0.01" min="0" required class="oteInfoField"><p class="commonString currency" style="color: white;">$</p><br>
+                <label class = "vestingInfoButton">
+                    <input type="checkbox" onclick="checkVestingInfoAvailable(this)" name="vestingStock" id = "vestingInfoCheckbox">
+                    <span class="toggleButton"></span>
+                </label>
+                <label for="vestingInfoCheckbox"><span class="toggleLabel">VESTING INFO</span></label><br>
+                <div id="vestingRanges">
+                    <div class="vestingRange">
+                        <label for="vestingDate" class="calendarLabel" style="color: white;">Vesting Date</label><input type="date" name = "vestingDate[]"  id ="vestingDate" class="vestingInfoField">
+                        <p class="commonString" style="color: white;">:</p>
+                        <input type="number" name = "vestingUnits[]" step="1" min="1" class = "vestingUnitField vestingInfoField" placeholder="Units">
+                        <p class="commonString" style="color: white;">Units</p>
+                        <input type="button" id="addButton" onclick="addVestingField()" value="+">
+                        <input type="button" id="removeButton" onclick="removeVestingField(this)" value="-">
+                    </div>
+                </div>
+            </div>
+            <label for = "investedDate" class="calendarLabel" style="color: white;">Invested Date</label><input type="date" name = "investedDate"  id ="investedDate" required><br>
+            <input class = "submitButton" type="submit" value="SUBMIT">
+        </form>
+    </div>
+{% endblock %}
