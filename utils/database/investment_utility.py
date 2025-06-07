@@ -86,7 +86,7 @@ class BankDeposits(Database):
                               sql.Composed(sql.Identifier(self.schema)+
                                           sql.SQL(".")+sql.Identifier(self.table)+
                                           sql.SQL(".")+sql.Identifier(self.idColumn)+
-                                          sql.SQL("AS {investmentIdColumn}").format(investmentIdColumn=sql.Identifier("bankDepositId")))])
+                                          sql.SQL("AS {bankDepositIdColumn}").format(bankDepositIdColumn=sql.Identifier("bankDepositId")))])
         
         command = sql.SQL("""SELECT {columns} FROM {schema}.{table} JOIN {schema}.{investmentTable} ON {schema}.{table}.{bankDepositId}={schema}.{investmentTable}.{bankDepositIdColumn}
         WHERE {schema}.{investmentTable}.{bankInvestmentId} = %s""").format(schema=sql.Identifier(self.schema),
@@ -142,7 +142,7 @@ class Stock(Database):
                 response=response.fetchone()
                 newStockId= response.get(self.idColumn,False) if response else False
                 if sip:
-                    return self.addNewSip(sipAmount=sipAmount,sipDate=sipDate,stockId=newStockId)
+                    self.addNewSip(sipAmount=sipAmount,sipDate=sipDate,stockId=newStockId)
                 elif oneTime:
                     self.addNewInvestmentDetail(amount=oneTimeInvestmentAmount,units=units,investedDate=investedDate,stockId=newStockId,vestingDetails=vestingDetails)
                 return self.addNewInvestment(userId=userId,investmentType=self.investmentType,stockId=newStockId)
@@ -182,7 +182,8 @@ class Stock(Database):
         returnColumns = list(map(lambda columnName:sql.Identifier(columnName),[self.stockNameColumn,
                                                                                "VestingDetails",
                                                                                "Active",
-                                                                               "WithdrawalDate"]))
+                                                                               "WithdrawalDate",
+                                                                               "SIP"]))
         returnColumns.append(sql.SQL("COALESCE({sqlColumn},0) AS {sqlColumn}").format(sqlColumn=sql.Identifier("Amount")))
         returnColumns.extend([sql.SQL("{schema}.{investmentTable}.{idColumn}").format(schema=sql.Identifier(self.schema),
                                                                             investmentTable=sql.Identifier("INVESTMENTS"),
@@ -249,17 +250,23 @@ class MutualFund(Database):
                 response=response.fetchone()
                 newMutualFundId= response.get(self.idColumn,False) if response else False
                 if sip:
-                    return self.addNewSip(sipAmount=sipAmount,sipDate=sipDate,mutualFundId=newMutualFundId)
+                    self.addNewSip(sipAmount=sipAmount,sipDate=sipDate,mutualFundId=newMutualFundId)
                 elif oneTime:
-                    return self.addNewInvestmentDetail(amount=oneTimeInvestmentAmount,units=units,investedDate=investedDate,mutualFundId=newMutualFundId)
+                    self.addNewInvestmentDetail(amount=oneTimeInvestmentAmount,units=units,investedDate=investedDate,mutualFundId=newMutualFundId)
                 return self.addNewInvestment(userId=userId,investmentType=self.investmentType,mutualFundId=newMutualFundId)
 
     def getUserMutualFunds(self,userId):
-        returnColumns=list(map(lambda columnName:sql.Identifier(columnName),[self.schemeColumn,"Active","WithdrawalDate","Amount"]))
+        returnColumns=list(map(lambda columnName:sql.Identifier(columnName),[self.schemeColumn,"Active","WithdrawalDate"]))
         groupByColumns=[*returnColumns]
         returnColumns.append(sql.SQL("COALESCE(SUM({schema}.{investmentDetailsTable}.{units}),0) AS {units}").format(schema=sql.Identifier(self.schema),
                                                                                                                      investmentDetailsTable=sql.Identifier("INVESTMENT_DETAILS"),
                                                                                                                      units=sql.Identifier("Units")))
+        returnColumns.append(sql.SQL("COALESCE(SUM({schema}.{investmentDetailsTable}.{amount}),0) AS {amount}").format(schema=sql.Identifier(self.schema),
+                                                                                                                     investmentDetailsTable=sql.Identifier("INVESTMENT_DETAILS"),
+                                                                                                                     amount=sql.Identifier("Amount")))
+        returnColumns.append(sql.SQL("COALESCE(SUM({schema}.{investmentDetailsTable}.{amount}),0)").format(schema=sql.Identifier(self.schema),
+                                                                                                                     investmentDetailsTable=sql.Identifier("INVESTMENT_DETAILS"),
+                                                                                                                     amount=sql.Identifier("Amount")))
         returnColumns.append(sql.SQL("{schema}.{investmentTable}.{id} AS {id}").format(schema=sql.Identifier(self.schema),
                                                                                                  investmentTable=sql.Identifier("INVESTMENTS"),
                                                                                                  id=sql.Identifier(self.idColumn)))

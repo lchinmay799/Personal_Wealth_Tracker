@@ -339,7 +339,7 @@ def newMutualFund():
         else:
             mutualFundAmount=float(request.form.get("mutualFundAmount"))
             mutualFundUnitPrice=float(request.form.get("mutualFundUnitPrice"))
-            utility.addMutualFundInvestment(userId=userId,schemeName=mutualFundName,investedDate=investedDate,
+            utility.addMutualFundInvestment(userId=userId,schemeName="{}.{}".format(mutualFundName,mutualFundId),investedDate=investedDate,
                                             sip=False,oneTime=True,
                                             units=round(mutualFundAmount/mutualFundUnitPrice,1),oneTimeInvestmentAmount=mutualFundAmount)
 

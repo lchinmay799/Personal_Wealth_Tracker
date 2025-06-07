@@ -91,7 +91,7 @@ class Database:
                 newSipId=response.get("Id",False) if response else False
                 return newSipId
   
-    def addNewInvestmentDetail(self,amount,units,investedDate,mutualFundId=None,stockId=None,vestingDetails=None):
+    def addNewInvestmentDetail(self,amount,units,investedDate,mutualFundId=None,stockId=None,vestingDetails=None,sipId=None):
         command=sql.SQL("INSERT INTO {schema}.{table} ({columns}) VALUES ({values}) RETURNING {return_column}").format(schema=sql.Identifier(self.schema),
                                                                                             table=sql.Identifier("INVESTMENT_DETAILS"),
                                                                                             columns=sql.SQL(", ").join([sql.Identifier("MutualFundId"),
@@ -99,13 +99,15 @@ class Database:
                                                                                                                         sql.Identifier("Amount"),
                                                                                                                         sql.Identifier("Units"),
                                                                                                                         sql.Identifier("InvestedDate"),
-                                                                                                                        sql.Identifier("VestingDetails")]),
+                                                                                                                        sql.Identifier("VestingDetails"),
+                                                                                                                        sql.Identifier("SIPID")]),
                                                                                             values=sql.SQL(", ").join([sql.Literal(mutualFundId),
                                                                                                                        sql.Literal(stockId),
                                                                                                                        sql.Literal(amount),
                                                                                                                        sql.Literal(units),
                                                                                                                        sql.Literal(investedDate),
-                                                                                                                       sql.Literal(vestingDetails)]),
+                                                                                                                       sql.Literal(vestingDetails),
+                                                                                                                       sql.Literal(sipId)]),
                                                                                             return_column=sql.Identifier("Id"))
         
         with self.connect() as connection:
@@ -121,7 +123,7 @@ class Database:
                                                                                                    table=sql.Identifier("INVESTMENTS"),
                                                                                                    investmentId=sql.Identifier("Id"),
                                                                                                    activeColumn=sql.Identifier("Active"),
-                                                                                                   withdrawalDateColumn=sql.Identifier(withdrawalDate))
+                                                                                                   withdrawalDateColumn=sql.Identifier("WithdrawalDate"))
         with self.connect() as connection:
             with connection.cursor(cursor_factory=RealDictCursor) as cursor:
                 response=self.executeCommand(command=command,cursor=cursor,argument=[False,withdrawalDate,investmentId])

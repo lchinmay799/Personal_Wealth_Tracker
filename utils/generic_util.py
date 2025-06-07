@@ -95,10 +95,14 @@ class Utility:
         return list(map(lambda x:int(x),array))
     
     def convertStrToDate(self,date,format="%Y-%m-%d"):
-        return datetime.strptime(date,format)
+        if isinstance(date,str):
+            return datetime.strptime(date,format)
+        return date
     
     def convertDateToStr(self,date,format="%Y-%m-%d"):
-        return datetime.strftime(date,format)
+        if isinstance(date,datetime):
+            return datetime.strftime(date,format)
+        return date
     
     def formatDeposit(self,investment):
         investment=dict(investment)
@@ -295,17 +299,17 @@ class UserStockInvestment(Utility):
             config=json.load(f)
             self.stockConfig = config["personal_wealth_tracker"]["stocks"]
 
-    def searchStockInfo(self,stockName,period="yearly"):
+    def searchStockInfo(self,stockName,period="yearly",outputSize="compact"):
         url=self.stockConfig.get("base_url")
         period_map = {
             "intraday":{
                 "function":"TIME_SERIES_INTRADAY",
-                "outputsize":"compact",
+                "outputsize":outputSize,
                 "interval":"5min"
             },
             "daily":{
                 "function":"TIME_SERIES_DAILY",
-                "outputsize":"compact"
+                "outputsize":outputSize
             },
             "monthly":{
                 "function":"TIME_SERIES_MONTHLY"
@@ -339,16 +343,16 @@ class UserStockInvestment(Utility):
         self.stockInvestment.addNewStockInvestment(userId=userId,stockName=stockName,investedDate=investedDate,
                                                    sip=sip,sipAmount=sipAmount,sipDate=sipDate,units=units,
                                                    oneTime=oneTime,vestingDetails=vestingDetails,oneTimeInvestmentAmount=oneTimeInvestmentAmount)
-    
-    def getCurrentStockAmount(self,stockName):
-        valid,stockInfo=self.searchStockInfo(stockName=stockName,period="daily")
-        if valid:
-            try:
-                for key in stockInfo.get("Time Series (Daily)"):
+
+    def getStockAmountOnDate(self,stockInfo,date):
+        date=self.convertStrToDate(date=date)
+        try:
+            for key in stockInfo.get("Time Series (Daily)"):
+                if self.convertStrToDate(key)<=date:
                     return float(stockInfo.get("Time Series (Daily)").get(key).get("4. close"))
-            except Exception as e:
-                print("getting current amount in except")
-                return float(random.randint(1,200))
+        except Exception as e:
+            print("getting amount on in except {}",date,e)
+            return float(random.randint(1,200))
             
     def formatStock(self,stockData,period="yearly"):
         period_map={
@@ -391,11 +395,13 @@ class UserStockInvestment(Utility):
     def combineStockFromInvestments(self,stockInfo):
         combinedStockInfo={"Amount":0,
                            "Units":0,
-                           "investmentInfo":defaultdict(lambda:[0,0]),
-                           "actualInvestment":{},
+                           "investmentInfo":defaultdict(lambda:[0,0,0]),
+                           "investmentValue":{},
                            "vestingInfo":None,
                            "Active":True,
                            "Id":None}
+        stockName = stockInfo[0].get("StockName")
+        valid,stockValue=self.searchStockInfo(stockName=stockName,period="daily",outputSize="full")
         for stock in stockInfo:
             combinedStockInfo["Amount"]+=float(stock.get("Amount",0))
             combinedStockInfo["Amount"]+=float(stock.get("SIPAmount",0))
@@ -412,15 +418,17 @@ class UserStockInvestment(Utility):
                     combinedStockInfo["vestingInfo"][vestingDate]=combinedStockInfo["vestingInfo"].get(vestingDate,0)+stock["VestingDetails"][vestingDate]
 
             stock["InvestedDate"]=self.convertDateToStr(stock["InvestedDate"])
-            combinedStockInfo["investmentInfo"][stock["InvestedDate"]][0]=combinedStockInfo["investmentInfo"][stock["InvestedDate"]][0]+float(stock["Units"])
-            combinedStockInfo["investmentInfo"][stock["InvestedDate"]][1]=combinedStockInfo["investmentInfo"][stock["InvestedDate"]][1]+float(stock["Amount"])
+            combinedStockInfo["investmentInfo"][stock["InvestedDate"]][0]+=float(stock["Units"])
+            combinedStockInfo["investmentInfo"][stock["InvestedDate"]][1]+=float(stock["Amount"])
+            combinedStockInfo["investmentInfo"][stock["InvestedDate"]][2]+=(float(stock["Units"])*self.getStockAmountOnDate(stockInfo=stockValue,
+                                                                                                                          date=stock["InvestedDate"]))
 
             combinedStockInfo["investmentInfo"]=dict(combinedStockInfo["investmentInfo"])
 
-        stockName = stock.get("StockName")
         combinedStockInfo["StockName"]=stockName
         combinedStockInfo["Id"]=stock.get("Id")
-        combinedStockInfo["currentAmount"]=round(self.getCurrentStockAmount(stockName=stockName)*combinedStockInfo.get("Units"),2)
+        combinedStockInfo["currentAmount"]=round(self.getStockAmountOnDate(stockInfo=stockValue,
+                                                                           date=datetime.today())*combinedStockInfo.get("Units"),2)
         combinedStockInfo["Active"]=stock.get("Active",True)
         combinedStockInfo["INRAmount"]=round(self.getExchangeRate(combinedStockInfo["currentAmount"],
                                                             targetConversion="INR",
@@ -433,7 +441,9 @@ class UserStockInvestment(Utility):
         for stock in stockInfo:
             stockName = stock.get("StockName")
             stockExchange = stockName.split(".")[1] if "." in stockName else ""
-            stockAmount=self.getExchangeRate(amount=float(stock.get("Units"))*self.getCurrentStockAmount(stockName),
+            valid,stockValue=self.searchStockInfo(stockName=stockName,period="daily")
+            stockAmount=self.getExchangeRate(amount=float(stock.get("Units"))*self.getStockAmountOnDate(stockInfo=stockValue,
+                                                                                                        date=datetime.today()),
                                              targetConversion="INR",
                                              stockExchange=stockExchange)
             stock["Amount"]="₹ {}".format(stockAmount)
@@ -478,6 +488,7 @@ class UserMutualFundInvestment(Utility):
                                                    units=units,oneTimeInvestmentAmount=oneTimeInvestmentAmount)
 
     def getMutualFundNavOnDate(self,mutualFundData,date):
+        date=self.convertStrToDate(date=date)
         for nav in mutualFundData["data"]:
             if self.convertStrToDate(date=nav["date"],format="%d-%m-%Y")<=date:
                 return round(float(nav["nav"]),2)
@@ -522,10 +533,11 @@ class UserMutualFundInvestment(Utility):
             investedDate=self.convertDateToStr(mutualFund["InvestedDate"])         
             combinedMutualFund["Amount"]+=float(mutualFund["Amount"])
             combinedMutualFund["Units"]+=float(mutualFund["Units"])
-            combinedMutualFund["investmentInfo"][investedDate][0]=combinedMutualFund["investmentInfo"][investedDate][0]+float(mutualFund["Units"])
-            combinedMutualFund["investmentInfo"][investedDate][1]=combinedMutualFund["investmentInfo"][investedDate][1]+float(mutualFund["Amount"])            
+            combinedMutualFund["investmentInfo"][investedDate][0]+=float(mutualFund["Units"])
+            combinedMutualFund["investmentInfo"][investedDate][1]+=float(mutualFund["Amount"])
+            # combinedMutualFund["investmentInfo"][investedDate][2]+=float(mutualFund["Units"])*self.getMutualFundNavOnDate(mutualFundData=mutualFundInfo,
+            #                                                                                                               date=investedDate)
 
-            
         combinedMutualFund["investmentInfo"]=dict(combinedMutualFund["investmentInfo"])
         
         today=self.convertStrToDate(self.convertDateToStr(date=datetime.today()))
@@ -552,11 +564,12 @@ class UserMutualFundInvestment(Utility):
         
     def getUserMutualFunds(self,userId):
         mutualFunds= self.mutualFund.getUserMutualFunds(userId=userId)
+        print("mutualFunds: ",mutualFunds)
         combinedMutualFund={}
         for mutualFund in mutualFunds:
             schemeName,schemeId=mutualFund["Scheme"].split(".")
             mutualFund["Scheme"]=schemeName
-            combinedMutualFund[schemeName]=combinedMutualFund.get(schemeName,0)+mutualFund["Amount"]
+            combinedMutualFund[schemeName]=float(combinedMutualFund.get(schemeName,0)+mutualFund["Amount"])
         return mutualFunds,list(map(lambda mutualFund:[mutualFund,combinedMutualFund[mutualFund]],combinedMutualFund))
 
     def getMutualFund(self,investmentId):

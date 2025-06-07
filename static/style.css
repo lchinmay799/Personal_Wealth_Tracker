@@ -398,7 +398,7 @@ input[type="radio"]:checked::before {
 
 #allBankDeposits, #allStocks, #allMutualFunds, #combinedInvestments {
     position:relative;
-    margin-top: 150px;
+    margin-top: 225px;
 }
 
 #stockButton, #mutualFundButton, #bankDepositsButton {
@@ -431,6 +431,11 @@ input[type="radio"]:checked::before {
     display: flex;
     justify-content: center;
     align-items: center;
+    flex-direction: column;
+}
+
+#stockMfInfoCharts {
+    margin-top: 150px;
 }
 
 #stockTrendButtons, #mutualFundTrendButtons{

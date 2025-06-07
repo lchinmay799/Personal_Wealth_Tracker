@@ -114,8 +114,9 @@ function removeVestingField(button) {
 }
 
 function createPieChart(data,locator) {
+    console.log(data);
     data=JSON.parse(data.replace(/&#39;/g, '"'))
-    
+    console.log(data);
     var pieChartData = new google.visualization.DataTable()
     pieChartData.addColumn('string','Name')
     pieChartData.addColumn('number','Amount')

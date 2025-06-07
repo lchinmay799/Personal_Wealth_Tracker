@@ -73,38 +73,25 @@ class Database:
 
 if __name__ == '__main__':
     database = Database()
-    # connection = database.connect(database=database.databaseConfig["default_database"],
-    #                               user=database.databaseConfig["application_username"],
-    #                               password=database.databaseConfig["default_password"],
-    #                               host=database.databaseConfig["host"],
-    #                               port=database.databaseConfig["port"])
-    # database.createUser(user=database.databaseConfig["application_username"],
-    #                     password=database.databaseConfig["application_password"],
-    #                     connection=connection)
-    # database.grantRole(user=database.databaseConfig["application_username"],
-    #                    role=database.databaseConfig["application_username"],
-    #                    connection=connection)
-    # database.createDatabase(database=database.databaseConfig["application_database"],
-    #                         user=database.databaseConfig["application_username"],
-    #                         connection=connection)
-    # connection = database.connect(database=database.databaseConfig["application_database"],
-    #                               user=database.databaseConfig["application_username"],
-    #                               password=database.databaseConfig["application_password"],
-    #                               host=database.databaseConfig["host"],
-    #                               port=database.databaseConfig["port"])
-    connection = database.connect(database=database.databaseConfig["application_database"],
-                                  user=database.databaseConfig["local_username"],
+    connection = database.connect(database=database.databaseConfig["default_database"],
+                                  user=database.databaseConfig["default_username"],
                                   password=database.databaseConfig["default_password"],
-                                  host=database.databaseConfig["localhost"])
-    database.dropSchema(schema=database.databaseConfig["application_schema"],
-                          user=database.databaseConfig["local_username"],
-                          connection=connection)
-    database.createSchema(schema=database.databaseConfig["application_schema"],
-                          user=database.databaseConfig["local_username"],
-                          connection=connection)
-    # database.createSchema(schema=database.databaseConfig["application_schema"],
-    #                       user=database.databaseConfig["application_username"],
-    #                       connection=connection)
+                                  host=database.databaseConfig["host"],
+                                  port=database.databaseConfig["port"])
+    database.createUser(user=database.databaseConfig["application_username"],
+                        password=database.databaseConfig["application_password"],
+                        connection=connection)
+    database.grantRole(user=database.databaseConfig["application_username"],
+                       role=database.databaseConfig["application_username"],
+                       connection=connection)
+    database.createDatabase(database=database.databaseConfig["application_database"],
+                            user=database.databaseConfig["application_username"],
+                            connection=connection)
+    connection = database.connect(database=database.databaseConfig["application_database"],
+                                  user=database.databaseConfig["application_username"],
+                                  password=database.databaseConfig["application_password"],
+                                  host=database.databaseConfig["host"],
+                                  port=database.databaseConfig["port"])
     
     database.createTable(schema=database.databaseConfig["application_schema"],
                          table="USERS",
