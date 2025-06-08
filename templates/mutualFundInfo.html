@@ -15,10 +15,10 @@
             let data = JSON.parse('{{combinedMutualFundsInfo | tojson}}');
             let date =Object.keys(data.investmentInfo);
             let priceData=Object.values(data.investmentInfo);
-            let investedUnits=[priceData[0][0],priceData[1][0]]
-            let investedAmount=[priceData[0][1],priceData[1][1]]
+            let investedUnits=[priceData[0][0]]
+            let investedAmount=[priceData[0][1]]
             let currentAmount=data.currentValue.Amount;
-            if (priceData.length>2){
+            if (priceData.length>1){
                 for (let i=1;i<priceData.length;i++){
                     investedAmount.push(investedAmount[i-1]+priceData[i][1]);
                     investedUnits.push(investedUnits[i-1]+priceData[i][0]);
@@ -71,12 +71,12 @@
     </div>
     <div class="stockMFInformation">
         <div id="mutualFundData">
-            <div id="activeMutualFundInvestment" style="margin-top: -100px;">
+            <div id="activeMutualFundInvestment">
                 {% if combinedMutualFundsInfo.Active %}
-                    <input type="checkbox" id = "activeCheckBox" onclick="markInvestmentAsInactive(this,{{ combinedMutualFundsInfo.Id }},'mutualfunds')"><label for="activeCheckBox">MARK AS INACTIVE</label>
+                    <input type="checkbox" style="margin-top: -100px;" id = "activeCheckBox" onclick="markInvestmentAsInactive(this,{{ combinedMutualFundsInfo.Id }},'mutualfunds')"><label for="activeCheckBox">MARK AS INACTIVE</label>
                 {% endif %}
             </div>
-            <form method="post" action="/myinvestments/mutualfunds/addInvestment/updateMutualFundInvestment">
+            <div>
                 <input type="hidden" id="mutualFundId" value="{{ combinedMutualFundsInfo.SchemeId }}" name="mutualFundId">
                 <p id="currentMutualFundPrice">Current Mutual Fund NAV : <input type="number" id="mutualFundUnitPrice" readonly><span class="commonString currency" style="color: white; font-size: 1.4em;">₹</span></p><br>
                 <p class="investedMutualFundAmount" style="color: white;">Originally Invested Amount : {{combinedMutualFundsInfo.Amount}}<span class="commonString currency" style="color: white; font-size: 1.4em;">₹</span></p>
@@ -89,7 +89,23 @@
                 {% endif %}
                 <p class="investedMutualFundAmount" style="color: {{ color }};">Current Mutual Fund Amount : {{combinedMutualFundsInfo.currentAmount}}<span class="commonString currency" style="color: {{ color }}; font-size: 1.4em;">₹</span></p>
                 <p id="investedMutualFundUnits">Number of Units : {{combinedMutualFundsInfo.Units}}</p>
-            </form>
+            </div>
+            {% if combinedMutualFundsInfo.SIP and combinedMutualFundsInfo.Active %}
+            <div>
+                <label class = "updateSIPButton">
+                    <input type="checkbox" onclick="checkUpdateSIPEnabled(this)" id = "updateSIPCheckbox">
+                    <span class="toggleButton"></span>
+                </label>
+                <label for="updateSIPCheckbox"><span class="toggleLabel">UPDATE SIP</span></label><br>
+                <div id = "sipContainer">
+                    <form method="post" action="/myinvestments/mutualfunds/updateSIP">
+                        <input type="number" id="sipAmount" name="sipAmount" placeholder="Update the SIP Amount" step="1" min="0" class="sipInfoField"><p class="commonString currency" style="color: white;">₹</p><br>
+                        <label for = "sipDate" class="calendarLabel" style="color: white;">Change SIP Date</label><input type="date" name = "sipDate"  id ="sipDate" class="sipInfoField"><br>
+                        <input class = "submitButton" type="submit" value="SUBMIT">
+                    </form>
+                </div>
+            </div>
+            {% endif %}
         </div>
         <div id="stockMfInfoCharts">
             <div class="lineChart" id="mutualFundInfoLineChart">

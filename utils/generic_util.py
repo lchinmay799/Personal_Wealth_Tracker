@@ -186,6 +186,12 @@ class Utility:
         
         return combinedInvestment
     
+    def isEmptyStringList(self,array):
+        for i in array:
+            if i != '':
+                return False
+        return True
+    
 class UserBankInvestment(Utility):
     def __init__(self):
         self.interestTypeConverter={
@@ -455,6 +461,15 @@ class UserStockInvestment(Utility):
         print("stockInfo: ",stockInfo)
         # return list(map(lambda x: dict(x),stockInfo)),self.combineStockFromInvestments(stockInfo=stockInfo)
         return self.combineStockFromInvestments(stockInfo=stockInfo)
+    
+    def updateStock(self,investmentId,vestingDetails):
+        self.stockInvestment.updateStock(columns=["VestingDetails"],
+                                         values=vestingDetails,
+                                         investmentId=investmentId)
+        
+    def getStockUnits(self,investmentId):
+        stockUnits= self.stockInvestment.getStockUnits(investmentId=investmentId)
+        return int(stockUnits.get("Units"))
 
 class UserMutualFundInvestment(Utility):
     def __init__(self):
@@ -528,36 +543,47 @@ class UserMutualFundInvestment(Utility):
                             "Active":True,
                             "investmentInfo":defaultdict(lambda:[0,0]),
                             "currentValue":{"Units":[0],"Amount":[0]},
-                            "Id":None}
-        for mutualFund in mutualFunds:
-            investedDate=self.convertDateToStr(mutualFund["InvestedDate"])         
-            combinedMutualFund["Amount"]+=float(mutualFund["Amount"])
-            combinedMutualFund["Units"]+=float(mutualFund["Units"])
-            combinedMutualFund["investmentInfo"][investedDate][0]+=float(mutualFund["Units"])
-            combinedMutualFund["investmentInfo"][investedDate][1]+=float(mutualFund["Amount"])
+                            "Id":None,
+                            "SIP":True}
+        # for mutualFund in mutualFunds:
+        #     investedDate=self.convertDateToStr(mutualFund["InvestedDate"])         
+            # combinedMutualFund["Amount"]+=float(mutualFund["Amount"])
+            # combinedMutualFund["Units"]+=float(mutualFund["Units"])
+            # combinedMutualFund["investmentInfo"][investedDate][0]+=float(mutualFund["Units"])
+            # combinedMutualFund["investmentInfo"][investedDate][1]+=float(mutualFund["Amount"])
             # combinedMutualFund["investmentInfo"][investedDate][2]+=float(mutualFund["Units"])*self.getMutualFundNavOnDate(mutualFundData=mutualFundInfo,
             #                                                                                                               date=investedDate)
 
-        combinedMutualFund["investmentInfo"]=dict(combinedMutualFund["investmentInfo"])
+        # combinedMutualFund["investmentInfo"]=dict(combinedMutualFund["investmentInfo"])
         
         today=self.convertStrToDate(self.convertDateToStr(date=datetime.today()))
-        combinedMutualFund["investmentInfo"][self.convertDateToStr(today)]=[combinedMutualFund["investmentInfo"][investedDate][0],
-                                                                            combinedMutualFund["investmentInfo"][investedDate][1]]
-        combinedMutualFund["Scheme"],combinedMutualFund["SchemeId"]=mutualFund["Scheme"].split(".")
-        combinedMutualFund["Active"]=mutualFund["Active"]
-        combinedMutualFund["Id"]=mutualFund["Id"]
+        # combinedMutualFund["investmentInfo"][self.convertDateToStr(today)]=[combinedMutualFund["investmentInfo"][investedDate][0],
+        #                                                                     combinedMutualFund["investmentInfo"][investedDate][1]]
+        combinedMutualFund["Scheme"],combinedMutualFund["SchemeId"]=mutualFunds[0]["Scheme"].split(".")
         isValid,mutualFundInfo=self.searchMutualFund(schemeId=combinedMutualFund["SchemeId"])
         currentMutualFundData= self.formatMutualFund(mutualFundData=mutualFundInfo,period="latest")
         for i,mutualFund in enumerate(sorted(mutualFunds,key=lambda fund:fund["InvestedDate"])):
-            combinedMutualFund["currentValue"]["Units"].append(combinedMutualFund["currentValue"]["Units"][i]+combinedMutualFund["investmentInfo"][investedDate][0])
-            combinedMutualFund["currentValue"]["Amount"].append(combinedMutualFund["currentValue"]["Units"][i+1]*self.getMutualFundNavOnDate(mutualFundData=mutualFundInfo,
-                                                                                                                                             date=mutualFund["InvestedDate"]))
-        combinedMutualFund["currentValue"]["Units"].append(combinedMutualFund["currentValue"]["Units"][i+1])
-        combinedMutualFund["currentValue"]["Amount"].append(combinedMutualFund["currentValue"]["Units"][i+1]*self.getMutualFundNavOnDate(mutualFundData=mutualFundInfo,
+            combinedMutualFund["Amount"]+=float(mutualFund["Amount"])
+            combinedMutualFund["Units"]+=float(mutualFund["Units"])
+            if float(mutualFund["Amount"])!=0:
+                investedDate=self.convertDateToStr(mutualFund["InvestedDate"])
+                combinedMutualFund["investmentInfo"][investedDate][0]+=float(mutualFund["Units"])
+                combinedMutualFund["investmentInfo"][investedDate][1]+=float(mutualFund["Amount"])
+                combinedMutualFund["currentValue"]["Units"].append(combinedMutualFund["currentValue"]["Units"][i]+combinedMutualFund["investmentInfo"][investedDate][0])
+                combinedMutualFund["currentValue"]["Amount"].append(combinedMutualFund["currentValue"]["Units"][i+1]*self.getMutualFundNavOnDate(mutualFundData=mutualFundInfo,
+                                                                                                                                             date=investedDate))
+        combinedMutualFund["currentValue"]["Units"].append(combinedMutualFund["currentValue"]["Units"][-1])
+        combinedMutualFund["currentValue"]["Amount"].append(combinedMutualFund["currentValue"]["Units"][-1]*self.getMutualFundNavOnDate(mutualFundData=mutualFundInfo,
                                                                                                                                          date=today))
+        combinedMutualFund["investmentInfo"][self.convertDateToStr(today)]=[combinedMutualFund["investmentInfo"][self.convertDateToStr(today)][0],
+                                                                            combinedMutualFund["investmentInfo"][self.convertDateToStr(today)][1]]
         combinedMutualFund["currentValue"]["Units"].pop(0)
         combinedMutualFund["currentValue"]["Amount"].pop(0)
         
+        combinedMutualFund["investmentInfo"]=dict(combinedMutualFund["investmentInfo"])
+        combinedMutualFund["Active"]=mutualFund["Active"]
+        combinedMutualFund["Id"]=mutualFund["Id"]
+        combinedMutualFund["SIP"]=mutualFund["SIP"]
         currentMutualFundNav=float(list(currentMutualFundData[combinedMutualFund["Scheme"].upper()].values())[0])
         combinedMutualFund["currentAmount"]=round(combinedMutualFund["Units"]*currentMutualFundNav,2)
         return combinedMutualFund
@@ -574,6 +600,7 @@ class UserMutualFundInvestment(Utility):
 
     def getMutualFund(self,investmentId):
         mutualFundInfo = list(map(lambda mutualFund:dict(mutualFund),self.mutualFund.getMutualFund(investmentId=investmentId)))
+        print("mutualFundInfo: ",mutualFundInfo)
         return self.combineMutualFundsFromInvestmentDetails(mutualFunds=mutualFundInfo)
     
 class UserInvestments(Utility):
@@ -594,4 +621,20 @@ class UserInvestments(Utility):
     
     def markInvestmentAsInactive(self,investmentId):
         self.investments.markInvestmentInactive(investmentId=investmentId,withdrawalDate=datetime.today())
-        
+
+    def updateSIP(self,updateInfo,investmentId,investmentType):
+        investmentTypes={
+            "stocks":1,
+            "mutualfunds":2
+        }
+        investmentTypeDB=self.investments.getInvestmentType(investmentId=investmentId)
+        if int(investmentTypeDB)==investmentTypes.get(investmentType) and investmentTypes[investmentType]==1:
+            self.investments.updateSIP(columns=list(updateInfo.keys()),
+                                       values=list(updateInfo.values()),
+                                       investmentId=investmentId,
+                                       investmentTypeId="StockId")
+        elif int(investmentTypeDB)==investmentTypes.get(investmentType) and investmentTypes[investmentType]==2:
+            self.investments.updateSIP(columns=list(updateInfo.keys()),
+                                       values=list(updateInfo.values()),
+                                       investmentId=investmentId,
+                                       investmentTypeId="MutualFundId")

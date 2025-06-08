@@ -3,7 +3,6 @@ import json
 import psycopg2.sql as sql
 from psycopg2.extras import RealDictCursor
 
-
 class Database:
     def __init__(self):
         with open('utils/config.json') as f:
@@ -91,7 +90,7 @@ class Database:
                 newSipId=response.get("Id",False) if response else False
                 return newSipId
   
-    def addNewInvestmentDetail(self,amount,units,investedDate,mutualFundId=None,stockId=None,vestingDetails=None,sipId=None):
+    def addNewInvestmentDetail(self,amount,units,investedDate,mutualFundId=None,stockId=None,sipId=None):
         command=sql.SQL("INSERT INTO {schema}.{table} ({columns}) VALUES ({values}) RETURNING {return_column}").format(schema=sql.Identifier(self.schema),
                                                                                             table=sql.Identifier("INVESTMENT_DETAILS"),
                                                                                             columns=sql.SQL(", ").join([sql.Identifier("MutualFundId"),
@@ -99,14 +98,12 @@ class Database:
                                                                                                                         sql.Identifier("Amount"),
                                                                                                                         sql.Identifier("Units"),
                                                                                                                         sql.Identifier("InvestedDate"),
-                                                                                                                        sql.Identifier("VestingDetails"),
                                                                                                                         sql.Identifier("SIPID")]),
                                                                                             values=sql.SQL(", ").join([sql.Literal(mutualFundId),
                                                                                                                        sql.Literal(stockId),
                                                                                                                        sql.Literal(amount),
                                                                                                                        sql.Literal(units),
                                                                                                                        sql.Literal(investedDate),
-                                                                                                                       sql.Literal(vestingDetails),
                                                                                                                        sql.Literal(sipId)]),
                                                                                             return_column=sql.Identifier("Id"))
         
@@ -137,3 +134,27 @@ class Database:
             with connection.cursor(cursor_factory=RealDictCursor) as cursor:
                 response=self.executeCommand(command=command,cursor=cursor,argument=[userId])
                 return response
+            
+    def updateSIP(self,columns,values,investmentId,investmentTypeId):
+        updateColumns=[sql.SQL("{column} = {value}").format(column=sql.Identifier(column),
+                                                            value=sql.Literal(value)) for column,value in zip(columns,values)]
+        command=sql.SQL("""UPDATE {schema}.{table} SET {updateColumns} WHERE {schema}.{table}.{investmentTypeId} = 
+                (SELECT {investmentTypeId} FROM {schema}.{investmentTable} WHERE {schema}.{investmentTable}.{id} = %s)""").format(schema=self.schema,
+                                                                                                        table=sql.Identifier("SIP"),
+                                                                                                        updateColumns=sql.SQL(", ").join(updateColumns),
+                                                                                                        investmentTypeId=sql.Identifier(investmentTypeId),
+                                                                                                        investmentTable=sql.Identifier("INVESTMENTS"),
+                                                                                                        id=sql.Identifier("Id"))
+        with self.connect() as connection:
+            with connection.cursor(cursor_factory=RealDictCursor) as cursor:
+                self.executeCommand(command=command,cursor=cursor,argument=[investmentId])
+
+    def getInvestmentType(self,investmentId):
+        command=sql.SQL("SELECT {investmentType} FROM {schema}.{table} WHERE {investmentId}=%s").format(schema=sql.Identifier(self.schema),
+                                                                                                        table=sql.Identifier("INVESTMENTS"),
+                                                                                                        investmentType=sql.Identifier("InvestmentType"),
+                                                                                                        investmentId=sql.Identifier("Id"))
+        with self.connect() as connection:
+            with connection.cursor(cursor_factory=RealDictCursor) as cursor:
+                response=self.executeCommand(command=command,cursor=cursor,argument=[investmentId])
+                return response.fetchone()

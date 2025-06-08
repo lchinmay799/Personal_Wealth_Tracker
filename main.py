@@ -249,6 +249,32 @@ def newStockInvestment():
     else:
         flash(message="Your Session Expired !! Login Again.",category="error")
         return redirect(url_for("login"))
+    
+@app.route('/myinvestments/stocks/updateStockInvestment',methods=["POST"])
+def updateStockInvestment():
+    userSession=UserSession()
+    is_access_token_valid,is_refresh_token_valid=userSession.checkTokenExpiry()
+    if is_access_token_valid:
+        utility=UserStockInvestment()
+        investmentId=request.form.get("investmentId")
+        vestingDates=request.form.getlist("vestingDate[]")
+        vestingUnits=request.form.getlist("vestingUnits[]")
+        updateInfo={}
+        if not utility.isEmptyStringList(vestingDates) and not utility.isEmptyStringList(vestingUnits):
+            stockUnits=utility.getStockUnits(investmentId=investmentId)
+            valid,vestingDetailJson=utility.prepareVestingJson(vestingDates=vestingDates,vestingUnits=vestingUnits,stockUnits=stockUnits)
+            if not valid:
+                flash(message="Incorrect Vesting Information !! Kindly Resubmit with Correct Information.",category="error")
+                response = make_response(redirect(url_for('addStockInvestment')))
+                return response
+            else:
+                updateInfo["VestingDetails"]=vestingDetailJson
+                return redirect(url_for('stocksInvested'))
+    elif is_refresh_token_valid:
+        return redirect(url_for('refreshToken'))
+    else:
+        flash(message="Your Session Expired !! Login Again.",category="error")
+        return redirect(url_for("login"))
 
 @app.route('/myinvestments/mutualfunds',methods=["GET"])
 def mutualFundsInvested():
@@ -344,6 +370,33 @@ def newMutualFund():
                                             units=round(mutualFundAmount/mutualFundUnitPrice,1),oneTimeInvestmentAmount=mutualFundAmount)
 
         return redirect(url_for('mutualFundsInvested'))
+    elif is_refresh_token_valid:
+        return redirect(url_for('refreshToken'))
+    else:
+        flash(message="Your Session Expired !! Login Again.",category="error")
+        return redirect(url_for("login"))
+
+@app.route('/myinvestments/<investmentType>/updateSIP',methods=["POST"])
+def updateSIP(investmentType):
+    userSession = UserSession()
+    is_access_token_valid,is_refresh_token_valid=userSession.checkTokenExpiry()
+    if is_access_token_valid:
+        utility=UserInvestments()
+        investmentId=request.form.get("investmentId")
+        sipAmount=request.form.get("sipAmount")
+        sipDate=request.form.get("sipDate")
+        updateInfo={}
+        if sipAmount!='':
+            updateInfo["SIPAmount"]=sipAmount
+        if sipDate!='':
+            updateInfo["SIPDate"]=sipDate
+        utility.updateSIP(updateInfo=updateInfo,
+                          investmentId=investmentId,
+                          investmentType=investmentType)
+        if investmentType=="stocks":
+            return redirect(url_for('stocksInvested'))
+        elif investmentType=="mutualfunds":
+            return redirect(url_for('mutualFundsInvested'))
     elif is_refresh_token_valid:
         return redirect(url_for('refreshToken'))
     else:

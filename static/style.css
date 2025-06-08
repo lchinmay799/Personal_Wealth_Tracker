@@ -130,14 +130,14 @@ body {
     color: white;
 }
 
-.updateInterestButton, .vestingInfoButton{
+.updateInterestButton, .updateSIPButton, .vestingInfoButton{
     height: 40px;
     position: relative;
     display: inline-block;
     width: 60px;
 }
 
-#updatenterestCheckbox, #vestingInfoCheckbox {
+#updatenterestCheckbox, #vestingInfoCheckbox, #updateSIPCheckbox {
     opacity: 0;
     width: 0;
     height: 0;
@@ -166,18 +166,18 @@ body {
     border-radius: 50%;
 }
 
-#updatenterestCheckbox:checked + .toggleButton, #vestingInfoCheckbox:checked + .toggleButton {
+#updatenterestCheckbox:checked + .toggleButton, #vestingInfoCheckbox:checked + .toggleButton, #updateSIPCheckbox:checked + .toggleButton {
     background-color: #4CAF50;
 }
 
-.toggleLabel, .updateInterestButton, .vestingInfoButton{
+.toggleLabel, .updateInterestButton, .updateSIPButton, .vestingInfoButton{
     font-size: 1.2em;
     vertical-align: middle;
     color: burlywood;
     font-weight: bold;
 }
 
-#updatenterestCheckbox:checked + .toggleButton, #vestingInfoCheckbox:checked + .toggleButton::before {
+#updatenterestCheckbox:checked + .toggleButton::before, #vestingInfoCheckbox:checked + .toggleButton::before, #updateSIPCheckbox:checked + .toggleButton::before {
     transform: translateX(30px);
 }
 
@@ -211,7 +211,7 @@ body {
     text-align: center;
 }
 
-.bankInterestType, .calendarLabel, .interestCalculateType, .updateInterestButton, .vestingInfoButton, .stockExchange, .stockInvestmentType, .mutualFundInvestmentType{
+.bankInterestType, .calendarLabel, .interestCalculateType, .updateInterestButton, .updateSIPButton, .vestingInfoButton, .stockExchange, .stockInvestmentType, .mutualFundInvestmentType{
     display: inline-flex;
     cursor: pointer;
     font-size: 24px;
@@ -252,12 +252,12 @@ body {
     border-radius: 5px;
 }
 
-#simpleInterestContainer, #compoundInterestContainer, #compoundInterestJsonContainer, #sipInvestmentContainer, #oneTimeInvestmentContainer, #vestingRanges {
+#simpleInterestContainer, #compoundInterestContainer, #compoundInterestJsonContainer, #sipInvestmentContainer, #oneTimeInvestmentContainer, #vestingRanges, #sipContainer {
     display: none;
     margin-top: 20px;
 }
 
-#sipInvestmentContainer, #oneTimeInvestmentContainer, #vestingRanges {
+#sipInvestmentContainer, #oneTimeInvestmentContainer, #vestingRanges, #sipContainer {
     margin-top: 0px;
 }
 
@@ -279,7 +279,7 @@ body {
     margin-left: 40px;
 }
 
-#vestingRanges {
+#vestingRanges, #sipContainer {
     flex-direction: column;
     margin-bottom: 10px;
 }

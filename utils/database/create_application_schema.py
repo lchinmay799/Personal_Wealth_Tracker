@@ -138,7 +138,7 @@ if __name__ == '__main__':
     
     database.createTable(schema=database.databaseConfig["application_schema"],
                          table="STOCKS",
-                         columns={"Id":"SERIAL","StockName":"VARCHAR(32) NOT NULL","SIP":"BOOLEAN DEFAULT false","OneTime":"BOOLEAN DEFAULT false","InvestedDate":"TIMESTAMP NOT NULL"},
+                         columns={"Id":"SERIAL","StockName":"VARCHAR(32) NOT NULL","SIP":"BOOLEAN DEFAULT false","OneTime":"BOOLEAN DEFAULT false","InvestedDate":"TIMESTAMP NOT NULL","VestingDetails":"JSONB"},
                          connection=connection)
     command = sql.SQL("ALTER TABLE {schema}.{table} ADD CONSTRAINT pk_stocks PRIMARY KEY ({column})").format(schema=sql.Identifier(database.databaseConfig["application_schema"]),
                                                                                                             table=sql.Identifier("STOCKS"),
@@ -168,7 +168,7 @@ if __name__ == '__main__':
 
     database.createTable(schema=database.databaseConfig["application_schema"],
                          table="INVESTMENT_DETAILS",
-                         columns={"Id":"SERIAL","MutualFundId":"INTEGER","StockId":"INTEGER","Amount":"BIGINT DEFAULT 0","Units":"NUMERIC(10,2) DEFAULT 0","SIPID":"INTEGER","InvestedDate":"TIMESTAMP","VestingDetails":"JSONB"},
+                         columns={"Id":"SERIAL","MutualFundId":"INTEGER","StockId":"INTEGER","Amount":"BIGINT DEFAULT 0","Units":"NUMERIC(10,2) DEFAULT 0","SIPID":"INTEGER","InvestedDate":"TIMESTAMP"},
                          connection=connection)
     command = sql.SQL("ALTER TABLE {schema}.{table} ADD CONSTRAINT pk_oti PRIMARY KEY ({column})").format(schema=sql.Identifier(database.databaseConfig["application_schema"]),
                                                                                                             table=sql.Identifier("INVESTMENT_DETAILS"),

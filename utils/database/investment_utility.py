@@ -128,11 +128,13 @@ class Stock(Database):
                                                                                             columns=sql.SQL(", ").join([sql.Identifier(self.stockNameColumn),
                                                                                                                         sql.Identifier(self.sipColumn),
                                                                                                                         sql.Identifier(self.oneTimeColumn),
-                                                                                                                        sql.Identifier(self.investedDateColumn)]),
+                                                                                                                        sql.Identifier(self.investedDateColumn),
+                                                                                                                        sql.Identifier("VestingDetails")]),
                                                                                             values=sql.SQL(", ").join([sql.Literal(stockName),
                                                                                                                        sql.Literal(sip),
                                                                                                                        sql.Literal(oneTime),
-                                                                                                                       sql.Literal(investedDate)]),
+                                                                                                                       sql.Literal(investedDate),
+                                                                                                                       sql.Literal(vestingDetails)]),
                                                                                             return_column=sql.Identifier(self.idColumn))
         
         with self.connect() as connection:
@@ -144,7 +146,7 @@ class Stock(Database):
                 if sip:
                     self.addNewSip(sipAmount=sipAmount,sipDate=sipDate,stockId=newStockId)
                 elif oneTime:
-                    self.addNewInvestmentDetail(amount=oneTimeInvestmentAmount,units=units,investedDate=investedDate,stockId=newStockId,vestingDetails=vestingDetails)
+                    self.addNewInvestmentDetail(amount=oneTimeInvestmentAmount,units=units,investedDate=investedDate,stockId=newStockId)
                 return self.addNewInvestment(userId=userId,investmentType=self.investmentType,stockId=newStockId)
 
     def getUserStocks(self,userId):
@@ -208,6 +210,35 @@ class Stock(Database):
             with connection.cursor(cursor_factory=RealDictCursor) as cursor:
                 response = self.executeCommand(cursor=cursor,command=command,argument=[stockInvestmentId])
                 return response.fetchall()
+            
+    def updateStock(self,columns,values,investmentId):
+        updateColumns=[sql.SQL("{column} = {value}").format(column=sql.Identifier(column),
+                                                            value=sql.Literal(value)) for column,value in zip(columns,values)]
+        command=sql.SQL("""UPDATE {schema}.{table} SET {updateColumns} WHERE {schema}.{table}.{StockId} = 
+                (SELECT {StockId} FROM {schema}.{investmentTable} WHERE {schema}.{investmentTable}.{id} = %s)""").format(schema=self.schema,
+                                                                                                        table=sql.Identifier(self.table),
+                                                                                                        updateColumns=sql.SQL(", ").join(updateColumns),
+                                                                                                        StockId=sql.Identifier("StockId"),
+                                                                                                        investmentTable=sql.Identifier("INVESTMENTS"),
+                                                                                                        id=sql.Identifier(self.idColumn))
+        with self.connect() as connection:
+            with connection.cursor(cursor_factory=RealDictCursor) as cursor:
+                self.executeCommand(command=command,cursor=cursor,argument=[investmentId])
+
+    def getStockUnits(self,investmentId):
+        command=sql.SQL("""SELECT "COALESCE({units},0) AS {units}" FROM  {schema}.{table} JOIN {schema}.{investmentTable} ON {schema}.{table}.{id}={schema}.{investmentTable}.{stockId}
+                        LEFT JOIN {schema}.{investmentDetailsTable} ON {schema}.{table}.{id}={schema}.{investmentDetailsTable}.{stockId}
+                        WHERE {schema}.{investmentTable}.{id}=%s""").format(schema=sql.Identifier(self.schema),
+                                                                            table=sql.Identifier(self.table),
+                                                                            units=sql.Identifier("Units"),
+                                                                            investmentTable=sql.Identifier("INVESTMENTS"),
+                                                                            stockId=sql.Identifier("StockId"),
+                                                                            id=sql.Identifier(self.idColumn),
+                                                                            investmentDetailsTable=sql.Identifier("INVESTMENT_DETAILS"))
+        with self.connect() as connection:
+            with connection.cursor(cursor_factory=RealDictCursor) as cursor:
+                response=self.executeCommand(command=command,cursor=cursor,argument=[investmentId])
+                return response.fetchone()
     
     def getAllStocks(self):
         command = sql.SQL("SELECT * FROM {schema}.{table}").format(schema=sql.Identifier(self.schema),
@@ -220,7 +251,7 @@ class Stock(Database):
 class MutualFund(Database):
     def __init__(self):
         super().__init__()
-        self.investmentType=1
+        self.investmentType=2
         self.table="MUTUAL_FUNDS"
         self.idColumn="Id"
         self.schemeColumn="Scheme"
@@ -291,7 +322,7 @@ class MutualFund(Database):
                 return response.fetchall()
             
     def getMutualFund(self,investmentId):
-        columns=list(map(lambda column:sql.Identifier(column),["Scheme","Active","WithdrawalDate"]))
+        columns=list(map(lambda column:sql.Identifier(column),["Scheme","Active","WithdrawalDate","SIP"]))
         columns.extend(list(map(lambda column:sql.SQL("COALESCE({schema}.{table}.{column},0) AS {column}").format(schema=sql.Identifier(self.schema),
                                                                               table=sql.Identifier("INVESTMENT_DETAILS"),
                                                                               column=sql.Identifier(column)),["Amount","Units"])))

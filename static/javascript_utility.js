@@ -172,6 +172,16 @@ function checkUpdateEnabled(checkbox,isCompound,isSimple) {
     }
 }
 
+function checkUpdateSIPEnabled(checkbox) {
+    let sipContainer=document.getElementById("sipContainer");
+    if (checkbox.checked) {
+        sipContainer.style.display="block";
+    }
+    else {
+        sipContainer.style.display="none";
+    }
+}
+
 function checkVestingInfoAvailable(checkbox) {
     elements=document.querySelectorAll(".vestingInfoField")
     if (checkbox.checked) {
@@ -385,27 +395,27 @@ function createVestingChart(locator,date,units,vestingLineChart=null) {
 }
 
 function markInvestmentAsInactive(checkbox,id,investmentType) {
-    console.log(checkbox.value);
-    console.log(id);
-    console.log(checkbox.value=='on');
     if (checkbox.value=='on'){
-        return fetch('/myinvestments/setInactive',{
-            headers:{
-                'Content-Type':'application/json'
-            },
-            method:"POST",
-            body:JSON.stringify({
-                "InvestmentId":id,
-                "InvestmentType":investmentType
-            })
-        }).then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);    
+        if (confirm("Please Confirm if you wish to mark this Investment as Inactive"))
+        {
+            return fetch('/myinvestments/setInactive',{
+                headers:{
+                    'Content-Type':'application/json'
+                },
+                method:"POST",
+                body:JSON.stringify({
+                    "InvestmentId":id,
+                    "InvestmentType":investmentType
+                })
+            }).then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);    
+                    }
+                return response.json();
                 }
-            return response.json();
-            }
-        ).then(response => {
-            window.location.href=response.redirect;
-        })
+            ).then(response => {
+                window.location.href=response.redirect;
+            })
+        }
     }
 }
