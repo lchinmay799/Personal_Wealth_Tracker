@@ -250,8 +250,8 @@ def newStockInvestment():
         flash(message="Your Session Expired !! Login Again.",category="error")
         return redirect(url_for("login"))
     
-@app.route('/myinvestments/stocks/updateStockInvestment',methods=["POST"])
-def updateStockInvestment():
+@app.route('/myinvestments/stocks/updateVestingDetail',methods=["POST"])
+def updateVestingDetail():
     userSession=UserSession()
     is_access_token_valid,is_refresh_token_valid=userSession.checkTokenExpiry()
     if is_access_token_valid:
@@ -259,16 +259,18 @@ def updateStockInvestment():
         investmentId=request.form.get("investmentId")
         vestingDates=request.form.getlist("vestingDate[]")
         vestingUnits=request.form.getlist("vestingUnits[]")
-        updateInfo={}
+        print("vestingDates: ",vestingDates,"vestingUnits",vestingUnits)
         if not utility.isEmptyStringList(vestingDates) and not utility.isEmptyStringList(vestingUnits):
             stockUnits=utility.getStockUnits(investmentId=investmentId)
+            print("stockUnits: ",stockUnits)
             valid,vestingDetailJson=utility.prepareVestingJson(vestingDates=vestingDates,vestingUnits=vestingUnits,stockUnits=stockUnits)
+            print("vestingDetailJson: ",vestingDetailJson)
             if not valid:
                 flash(message="Incorrect Vesting Information !! Kindly Resubmit with Correct Information.",category="error")
-                response = make_response(redirect(url_for('addStockInvestment')))
+                response = make_response(redirect(url_for('stocksInvested')))
                 return response
             else:
-                updateInfo["VestingDetails"]=vestingDetailJson
+                utility.updateStock(investmentId=investmentId,vestingDetails=vestingDetailJson)
                 return redirect(url_for('stocksInvested'))
     elif is_refresh_token_valid:
         return redirect(url_for('refreshToken'))

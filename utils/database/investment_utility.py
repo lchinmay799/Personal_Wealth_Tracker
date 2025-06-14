@@ -214,8 +214,8 @@ class Stock(Database):
     def updateStock(self,columns,values,investmentId):
         updateColumns=[sql.SQL("{column} = {value}").format(column=sql.Identifier(column),
                                                             value=sql.Literal(value)) for column,value in zip(columns,values)]
-        command=sql.SQL("""UPDATE {schema}.{table} SET {updateColumns} WHERE {schema}.{table}.{StockId} = 
-                (SELECT {StockId} FROM {schema}.{investmentTable} WHERE {schema}.{investmentTable}.{id} = %s)""").format(schema=self.schema,
+        command=sql.SQL("""UPDATE {schema}.{table} SET {updateColumns} WHERE {schema}.{table}.{id} = 
+                (SELECT {StockId} FROM {schema}.{investmentTable} WHERE {schema}.{investmentTable}.{id} = %s)""").format(schema=sql.Identifier(self.schema),
                                                                                                         table=sql.Identifier(self.table),
                                                                                                         updateColumns=sql.SQL(", ").join(updateColumns),
                                                                                                         StockId=sql.Identifier("StockId"),
@@ -226,7 +226,7 @@ class Stock(Database):
                 self.executeCommand(command=command,cursor=cursor,argument=[investmentId])
 
     def getStockUnits(self,investmentId):
-        command=sql.SQL("""SELECT "COALESCE({units},0) AS {units}" FROM  {schema}.{table} JOIN {schema}.{investmentTable} ON {schema}.{table}.{id}={schema}.{investmentTable}.{stockId}
+        command=sql.SQL("""SELECT COALESCE({units},0) AS {units} FROM  {schema}.{table} JOIN {schema}.{investmentTable} ON {schema}.{table}.{id}={schema}.{investmentTable}.{stockId}
                         LEFT JOIN {schema}.{investmentDetailsTable} ON {schema}.{table}.{id}={schema}.{investmentDetailsTable}.{stockId}
                         WHERE {schema}.{investmentTable}.{id}=%s""").format(schema=sql.Identifier(self.schema),
                                                                             table=sql.Identifier(self.table),

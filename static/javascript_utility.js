@@ -185,10 +185,12 @@ function checkUpdateSIPEnabled(checkbox) {
 function checkVestingInfoAvailable(checkbox) {
     elements=document.querySelectorAll(".vestingInfoField")
     if (checkbox.checked) {
+        document.getElementById("vestingDetails").style.display="flex";
         document.getElementById("vestingRanges").style.display="flex";
         elements.forEach(field => {field.required=true;});
     }
     else {
+        document.getElementById("vestingDetails").style.display="none";
         document.getElementById("vestingRanges").style.display="none";
         elements.forEach(field => {field.required=false;});
     }

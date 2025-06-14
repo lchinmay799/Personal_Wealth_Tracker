@@ -70,12 +70,12 @@
         <p id="investedMutualFundName">{{combinedMutualFundsInfo.Scheme}}</p>
     </div>
     <div class="stockMFInformation">
+        <div id="activeMutualFundInvestment">
+            {% if combinedMutualFundsInfo.Active %}
+                <input type="checkbox" style="margin-top: -100px;" id = "activeCheckBox" onclick="markInvestmentAsInactive(this,{{ combinedMutualFundsInfo.Id }},'mutualfunds')"><label for="activeCheckBox">MARK AS INACTIVE</label>
+            {% endif %}
+        </div>
         <div id="mutualFundData">
-            <div id="activeMutualFundInvestment">
-                {% if combinedMutualFundsInfo.Active %}
-                    <input type="checkbox" style="margin-top: -100px;" id = "activeCheckBox" onclick="markInvestmentAsInactive(this,{{ combinedMutualFundsInfo.Id }},'mutualfunds')"><label for="activeCheckBox">MARK AS INACTIVE</label>
-                {% endif %}
-            </div>
             <div>
                 <input type="hidden" id="mutualFundId" value="{{ combinedMutualFundsInfo.SchemeId }}" name="mutualFundId">
                 <p id="currentMutualFundPrice">Current Mutual Fund NAV : <input type="number" id="mutualFundUnitPrice" readonly><span class="commonString currency" style="color: white; font-size: 1.4em;">₹</span></p><br>
@@ -99,6 +99,7 @@
                 <label for="updateSIPCheckbox"><span class="toggleLabel">UPDATE SIP</span></label><br>
                 <div id = "sipContainer">
                     <form method="post" action="/myinvestments/mutualfunds/updateSIP">
+                        <input type="hidden" name="investmentId" value={{combinedMutualFundsInfo.Id}}>
                         <input type="number" id="sipAmount" name="sipAmount" placeholder="Update the SIP Amount" step="1" min="0" class="sipInfoField"><p class="commonString currency" style="color: white;">₹</p><br>
                         <label for = "sipDate" class="calendarLabel" style="color: white;">Change SIP Date</label><input type="date" name = "sipDate"  id ="sipDate" class="sipInfoField"><br>
                         <input class = "submitButton" type="submit" value="SUBMIT">

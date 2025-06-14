@@ -166,6 +166,22 @@ body {
     border-radius: 50%;
 }
 
+#activeCheckBox {
+  width: 18px;
+  height: 18px;
+  accent-color: #007bff;
+  cursor: pointer;
+}
+
+label[for="activeCheckBox"] {
+  cursor: pointer;
+  user-select: none;
+  font-family: 'Times New Roman', Times, serif;
+  font-weight: bold;
+  color: red;
+  margin-left: 8px;
+}
+
 #updatenterestCheckbox:checked + .toggleButton, #vestingInfoCheckbox:checked + .toggleButton, #updateSIPCheckbox:checked + .toggleButton {
     background-color: #4CAF50;
 }

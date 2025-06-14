@@ -464,7 +464,7 @@ class UserStockInvestment(Utility):
     
     def updateStock(self,investmentId,vestingDetails):
         self.stockInvestment.updateStock(columns=["VestingDetails"],
-                                         values=vestingDetails,
+                                         values=[vestingDetails],
                                          investmentId=investmentId)
         
     def getStockUnits(self,investmentId):
@@ -628,12 +628,12 @@ class UserInvestments(Utility):
             "mutualfunds":2
         }
         investmentTypeDB=self.investments.getInvestmentType(investmentId=investmentId)
-        if int(investmentTypeDB)==investmentTypes.get(investmentType) and investmentTypes[investmentType]==1:
+        if int(investmentTypeDB.get("InvestmentType"))==investmentTypes.get(investmentType) and investmentTypes[investmentType]==1:
             self.investments.updateSIP(columns=list(updateInfo.keys()),
                                        values=list(updateInfo.values()),
                                        investmentId=investmentId,
                                        investmentTypeId="StockId")
-        elif int(investmentTypeDB)==investmentTypes.get(investmentType) and investmentTypes[investmentType]==2:
+        elif int(investmentTypeDB.get("InvestmentType"))==investmentTypes.get(investmentType) and investmentTypes[investmentType]==2:
             self.investments.updateSIP(columns=list(updateInfo.keys()),
                                        values=list(updateInfo.values()),
                                        investmentId=investmentId,

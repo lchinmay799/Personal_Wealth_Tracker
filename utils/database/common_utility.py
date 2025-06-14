@@ -139,7 +139,7 @@ class Database:
         updateColumns=[sql.SQL("{column} = {value}").format(column=sql.Identifier(column),
                                                             value=sql.Literal(value)) for column,value in zip(columns,values)]
         command=sql.SQL("""UPDATE {schema}.{table} SET {updateColumns} WHERE {schema}.{table}.{investmentTypeId} = 
-                (SELECT {investmentTypeId} FROM {schema}.{investmentTable} WHERE {schema}.{investmentTable}.{id} = %s)""").format(schema=self.schema,
+                (SELECT {investmentTypeId} FROM {schema}.{investmentTable} WHERE {schema}.{investmentTable}.{id} = %s)""").format(schema=sql.Identifier(self.schema),
                                                                                                         table=sql.Identifier("SIP"),
                                                                                                         updateColumns=sql.SQL(", ").join(updateColumns),
                                                                                                         investmentTypeId=sql.Identifier(investmentTypeId),

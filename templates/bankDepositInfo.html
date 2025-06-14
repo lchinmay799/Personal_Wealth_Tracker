@@ -13,67 +13,15 @@
     </div>
     
     <div>
-        <form method="post" action="/myinvestments/bankdeposits/addInvestment/updateBankDeposit">
-            <div id="activeBankInvestment">
-                {% if combinedDepositInfo.Active %}
-                    <input type="checkbox" id = "activeCheckBox" onclick="markInvestmentAsInactive(this,{{ combinedDepositInfo.investmentId }},'bankdeposits')"><label for="activeCheckBox">MARK AS INACTIVE</label>
-                {% endif %}
-            </div>
-            <p id="depositBankName">{{combinedDepositInfo.BankName}}</p>
-            <p id="depositAmount">Invested Amount : {{combinedDepositInfo.Amount}}</p>
-            <p id="depositInvestedDate">Invested Date : {{combinedDepositInfo.InvestedDate}}</p>
-            <p id="currentAmount">Current Value : {{combinedDepositInfo.CurrentAmount}}</p>
-            <p id="depositMaturityDate">Maturity Date : {{combinedDepositInfo.MaturityDate}}</p>
-            
-            {% if combinedDepositInfo.InterestType.strip() == 'SIMPLE' and combinedDepositInfo.Active  %}
-                <label class = "updateInterestButton">
-                    <input type="checkbox" onclick="checkUpdateEnabled(this,false,true)" id = "updatenterestCheckbox">
-                    <span class="toggleButton"></span>
-                </label>
-                <label for="updatenterestCheckbox"><span class="toggleLabel">UPDATE INTEREST</span></label><br>
-                <div id = "simpleInterestContainer">
-                    <input type="radio" name = "simpleInterestCalculateType" value="MONTHLY" id = "monthlyInterestSimple" ><label for="" class = "interestCalculateType">Monthly</label>
-                    <input type="radio" name = "simpleInterestCalculateType" value="QUARTERLY" id = "quarterlyInterestSimple"><label for="quarterlyInterestSimple" class = "interestCalculateType">Quarterly</label>
-                    <input type="radio" name = "simpleInterestCalculateType" value="YEARLY" id = "yearlyInterestSimple" checked><label for="yearlyInterestSimple" class = "interestCalculateType">Yearly</label><br>
-                    <input type="number" name = "InterestRate" step="0.01" min="0" id = "bankInterestRate" placeholder="Enter the Rate of Interest" class="simpleInterestField" required>
-                </div>
+        <div id="activeBankInvestment">
+            {% if combinedDepositInfo.Active %}
+                <input type="checkbox" id = "activeCheckBox" onclick="markInvestmentAsInactive(this,{{ combinedDepositInfo.investmentId }},'bankdeposits')"><label for="activeCheckBox">MARK AS INACTIVE</label>
             {% endif %}
-            
-            {% if combinedDepositInfo.InterestType == 'COMPOUND' and combinedDepositInfo.Active %}
-                <label class = "updateInterestButton">
-                    <input type="checkbox" onclick="checkUpdateEnabled(this,true,false)" id = "updatenterestCheckbox">
-                    <span class="toggleButton"></span>
-                </label>
-                <label for="updatenterestCheckbox"><span class="toggleLabel">UPDATE INTEREST</span></label><br>
-                <div id = "compoundInterestJsonContainer">
-                    
-                    <div id="compoundInterestSelectionContainer">
-                        <input type="radio" name = "compoundInterestCalculateType" value="MONTHLY" id = "monthlyInterestCompound" onclick="isCompoundInterest(true); isCompoundInterestJson(true,false);"><label for="monthlyInterestCompound" class = "interestCalculateType">Monthly</label>
-                        <input type="radio" name = "compoundInterestCalculateType" value="QUARTERLY" id = "quarterlyInterestCompound" onclick="isCompoundInterest(true); isCompoundInterestJson(true,false)"><label for="quarterlyInterestCompound" class = "interestCalculateType">Quarterly</label>
-                        <input type="radio" name = "compoundInterestCalculateType" value="YEARLY" id = "yearlyInterestCompound" onclick="isCompoundInterest(true); isCompoundInterestJson(true,false)"><label for="yearlyInterestCompound" class = "interestCalculateType">Yearly</label>
-                        <input type="radio" name = "compoundInterestCalculateType" value="NONE" id = "notCompoundInterestCompound" onclick="isCompoundInterest(false); isCompoundInterestJson(true,false,true)" checked><label for="notCompoundInterestCompound" class = "interestCalculateType">None</label>
-                    </div>
-                    
-                    <div id = "compoundInterestContainer">
-                        <input type="number" name = "InterestRate" step="0.01" min="0" id = "bankInterestRate" placeholder="Enter the Rate of Interest" class = "compoundInterestField" required><br>
-                    </div>
-                    
-                    <div class="compoundInterestRange">
-                        <input type="number" name = "startyears[]" step="1" min="0" class = "compoundInterestField" placeholder="Years" required>
-                        <input type="number" name = "startmonths[]" step="1" min="0" max="12" class = "compoundInterestField" placeholder="Months" required>
-                        <input type="number" name = "startdays[]" step="1" min="0" max="31" class = "compoundInterestField" placeholder="Days" required>
-                        <p class="commonString">TO</p>
-                        <input type="number" name = "endyears[]" step="1" min="0" class = "compoundInterestField" placeholder="Years" required>
-                        <input type="number" name = "endmonths[]" step="1" min="0" max="12" class = "compoundInterestField" placeholder="Months" required>
-                        <input type="number" name = "enddays[]" step="1" min="0" max="31"  class = "compoundInterestField" placeholder="Days" required>
-                        <p class="commonString">:</p>
-                        <input type="number" name = "compoundInterestRate[]" step="0.01" min="0" class = "compoundInterestField" placeholder="%" required>
-                        <input type="button" id="addButton" onclick="addCompoundInterestField()" value="+">
-                        <input type="button" id="removeButton" onclick="removeCompoundInterestField(this)" value="-">
-                    </div>
-                </div>
-            {% endif %}
-            <input style="display: none;" class = "submitButton" type="submit" value="SUBMIT" >
-        </form>
+        </div>
+        <p id="depositBankName">{{combinedDepositInfo.BankName}}</p>
+        <p id="depositAmount">Invested Amount : {{combinedDepositInfo.Amount}}</p>
+        <p id="depositInvestedDate">Invested Date : {{combinedDepositInfo.InvestedDate}}</p>
+        <p id="currentAmount">Current Value : {{combinedDepositInfo.CurrentAmount}}</p>
+        <p id="depositMaturityDate">Maturity Date : {{combinedDepositInfo.MaturityDate}}</p>  
     </div>
 {% endblock %}
