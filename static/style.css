@@ -319,7 +319,7 @@ label[for="activeCheckBox"] {
     font-size: 1.8em;
 }
 
-#inrAmount{
+#inrAmount, #vestingDetails{
     display: none;
 }
 

@@ -10,15 +10,15 @@ class Database:
 
     def connect(self,database,user,password,host,port=None):
         try:
-            # connection =psycopg2.connect(database=database,
-            #                 user=user,
-            #                 password=password,
-            #                 host=host,
-            #                 port = port)
             connection =psycopg2.connect(database=database,
                             user=user,
                             password=password,
-                            host=host)
+                            host=host,
+                            port = port)
+            # connection =psycopg2.connect(database=database,
+            #                 user=user,
+            #                 password=password,
+            #                 host=host)
             print("Successfully established new connection to the Database : {}\n with User : {}\n Password : {}\n Hosted on {} using the Port {}".format(database,user,password,host,port))
             return connection
         except Exception as e:
@@ -82,7 +82,7 @@ if __name__ == '__main__':
                         password=database.databaseConfig["application_password"],
                         connection=connection)
     database.grantRole(user=database.databaseConfig["application_username"],
-                       role=database.databaseConfig["application_username"],
+                       role=database.databaseConfig["default_username"],
                        connection=connection)
     database.createDatabase(database=database.databaseConfig["application_database"],
                             user=database.databaseConfig["application_username"],
@@ -92,6 +92,9 @@ if __name__ == '__main__':
                                   password=database.databaseConfig["application_password"],
                                   host=database.databaseConfig["host"],
                                   port=database.databaseConfig["port"])
+    database.createSchema(connection=connection,
+                          schema=database.databaseConfig["application_schema"],
+                          user=database.databaseConfig["application_username"])
     
     database.createTable(schema=database.databaseConfig["application_schema"],
                          table="USERS",
