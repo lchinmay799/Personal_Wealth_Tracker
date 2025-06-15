@@ -463,7 +463,7 @@ def newBankDeposit():
         maturityYears=request.form.get("maturityYears")
         maturityMonths=request.form.get("maturityMonths")
         maturityDays=request.form.get("maturityDays")
-        
+
         utility=UserBankInvestment()
         isValid,maturityDate=utility.isValidMaturityDate(maturityDate=[maturityDays,maturityMonths,maturityYears],startDate=invsetmentDate)
         if not isValid:
@@ -473,7 +473,7 @@ def newBankDeposit():
         print(userId,principalAmount,interestType,invsetmentDate,type(invsetmentDate))
         
         if interestType == "SIMPLE":
-            rateOfInterest = request.form.get("InterestRate")
+            rateOfInterest = request.form.get("simpleInterestRate")
             interestCalculateType = request.form.get("simpleInterestCalculateType")
             print("simple-periodic",rateOfInterest,invsetmentDate,maturityDate)
             isValid,interestRateJson=utility.prepareInterestJson(interestRates=rateOfInterest,startDate=invsetmentDate,maturityDate=maturityDate,
@@ -488,10 +488,10 @@ def newBankDeposit():
                 endYears=request.form.getlist("endyears[]")
                 endMonths=request.form.getlist("endmonths[]")
                 endDays=request.form.getlist("enddays[]")
-                interestRates =request.form.getlist("compoundInterestRate[]")
+                interestRates =request.form.getlist("compoundInterestRates[]")
                 print("compound-fd",startDays,startMonths,startYears,"\n",endDays,endMonths,endYears,"\n",interestRates)
                 isValid,interestRateJson=utility.prepareInterestJson(interestRates,invsetmentDate,startDays=startDays,startMonths=startMonths,startYears=startYears,
-                                                                     endDays=endDays,endMonths=endMonths,endYears=endYears,
+                                                                     endDays=endDays,endMonths=endMonths,endYears=endYears,maturityDate=maturityDate,
                                                                      interestCalculateType=interestCalculateType,interestType=interestType)
                 if not isValid:
                     flash(message="Invalid Compound Interest Submitted !! Kindly Resubmit.",category="error")
@@ -499,7 +499,7 @@ def newBankDeposit():
                     return response
                 print(interestRateJson)
             else:
-                rateOfInterest = request.form.get("InterestRate")
+                rateOfInterest = request.form.get("compoundInterestRate")
                 print("compound-periodic",rateOfInterest,invsetmentDate,maturityDate)
                 isValid,interestRateJson=utility.prepareInterestJson(interestRates=rateOfInterest,startDate=invsetmentDate,maturityDate=maturityDate,
                                                                      interestCalculateType=interestCalculateType,interestType=interestType)

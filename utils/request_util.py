@@ -6,5 +6,4 @@ class APIRequest():
                                   headers=request_headers,
                                   data=request_body,
                                   params=query_params)
-        print("Request Details",url)
         return response

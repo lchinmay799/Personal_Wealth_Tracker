@@ -9,14 +9,29 @@ function isCompoundInterestJson(isCompound,isSimple,isCompoundJson=false) {
         if (compoundInterestJsonContainer != null) {
             compoundInterestJsonContainer.style.display="block";
         }
-        compoundInterestFields.forEach(field => {field.required=true;});
         let compoundInterestContainer=document.getElementById("compoundInterestContainer");
         let compoundInterestRangeContainer=document.getElementsByClassName("compoundInterestRange")[0];
         if (isCompoundJson){
+            compoundInterestFields.forEach(field => {
+                if (field.closest(".compoundInterestRange")){
+                    field.required=true;
+                }
+                else{
+                    field.required=false;
+                }
+            });
             compoundInterestRangeContainer.style.display="flex";
             compoundInterestContainer.style.display="none";
         }
         else{
+            compoundInterestFields.forEach(field => {
+                if (field.closest(".compoundInterestRange")){
+                    field.required=false;
+                }
+                else{
+                    field.required=true;
+                }
+            });
             compoundInterestRangeContainer.style.display="none";
             compoundInterestContainer.style.display="flex";
         }
@@ -79,7 +94,7 @@ function addCompoundInterestField() {
         <input type="number" name = "endmonths[]" step="1" min="0" max="12" class = "compoundInterestField" placeholder="Months">
         <input type="number" name = "enddays[]" step="1" min="0" max="31" class = "compoundInterestField" placeholder="Days">
         <p class="commonString">:</p>
-        <input type="number" name = "compoundInterestRate[]" step="0.01" min="0" class = "compoundInterestField" placeholder="%">
+        <input type="number" name = "compoundInterestRates[]" step="0.01" min="0" class = "compoundInterestField" placeholder="%">
         <input type="button" id="addButton" onclick="addCompoundInterestField()" value="+">
         <input type="button" id="removeButton" onclick="removeCompoundInterestField(this)" value="-">
     `

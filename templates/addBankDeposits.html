@@ -26,7 +26,7 @@
                 <input type="radio" name = "simpleInterestCalculateType" value="MONTHLY" id = "monthlyInterestSimple" ><label for="monthlyInterestSimple" class = "interestCalculateType">Monthly</label>
                 <input type="radio" name = "simpleInterestCalculateType" value="QUARTERLY" id = "quarterlyInterestSimple"><label for="quarterlyInterestSimple" class = "interestCalculateType">Quarterly</label>
                 <input type="radio" name = "simpleInterestCalculateType" value="YEARLY" id = "yearlyInterestSimple" checked><label for="yearlyInterestSimple" class = "interestCalculateType">Yearly</label><br>
-                <input type="number" name = "InterestRate" step="0.01" min="0" id = "bankInterestRate" placeholder="Enter the Rate of Interest" class="simpleInterestField" required>
+                <input type="number" name = "simpleInterestRate" step="0.01" min="0" id = "bankInterestRate" placeholder="Enter the Rate of Interest" class="simpleInterestField" required>
             </div>
             
             <input type="radio" name = "InterestType" value="COMPOUND" id = "compoundInterest" onclick="isCompoundInterestJson(true,false)"><label for="compoundInterest" class = "bankInterestType">COMPOUND INTEREST</label><br>
@@ -40,7 +40,7 @@
                 </div>
 
                 <div id = "compoundInterestContainer">
-                    <input type="number" name = "InterestRate" step="0.01" min="0" id = "bankInterestRate" placeholder="Enter the Rate of Interest" class = "compoundInterestField" required><br>
+                    <input type="number" name = "compoundInterestRate" step="0.01" min="0" id = "bankInterestRate" placeholder="Enter the Rate of Interest" class = "compoundInterestField" required><br>
                 </div>
                 
                 <div class="compoundInterestRange">
@@ -52,7 +52,7 @@
                     <input type="number" name = "endmonths[]" step="1" min="0" max="12" class = "compoundInterestField" placeholder="Months" required>
                     <input type="number" name = "enddays[]" step="1" min="0" max="31"  class = "compoundInterestField" placeholder="Days" required>
                     <p class="commonString">:</p>
-                    <input type="number" name = "compoundInterestRate[]" step="0.01" min="0" class = "compoundInterestField" placeholder="%" required>
+                    <input type="number" name = "compoundInterestRates[]" step="0.01" min="0" class = "compoundInterestField" placeholder="%" required>
                     <input type="button" id="addButton" onclick="addCompoundInterestField()" value="+">
                     <input type="button" id="removeButton" onclick="removeCompoundInterestField(this)" value="-">
                 </div>

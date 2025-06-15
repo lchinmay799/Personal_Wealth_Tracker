@@ -92,7 +92,11 @@ class Utility:
             self.currencyExchangeConfig = config["personal_wealth_tracker"]["currency_exchange"]
 
     def convertToInt(self,array):
-        return list(map(lambda x:int(x),array))
+        for i in range(len(array)):
+            if isinstance(array[i],list):
+                self.convertToInt(array=array[i])
+            else:
+                array[i]=int(array[i])
     
     def convertStrToDate(self,date,format="%Y-%m-%d"):
         if isinstance(date,str):
@@ -215,7 +219,7 @@ class UserBankInvestment(Utility):
         return True
 
     def isValidMaturityDate(self,maturityDate,startDate):
-        maturityDate=self.convertToInt(maturityDate)
+        self.convertToInt(maturityDate)
         startDate=self.convertStrToDate(startDate)
         maturityDate=startDate+relativedelta(days=maturityDate[0],months=maturityDate[1],years=maturityDate[2])
         if maturityDate > startDate:
@@ -226,13 +230,13 @@ class UserBankInvestment(Utility):
         rateOfInterest = {}
         startDate=self.convertStrToDate(startDate)
         if interestType=="COMPOUND":
-            if interestCalculateType == "None":
-                startDays=self.convertToInt(startDays)
-                startMonths=self.convertToInt(startMonths)
-                startYears=self.convertToInt(startYears)
-                endDays=self.convertToInt(endDays)
-                endMonths=self.convertToInt(endMonths)
-                endYears=self.convertToInt(endYears)
+            if interestCalculateType == "NONE":
+                self.convertToInt(startDays)
+                self.convertToInt(startMonths)
+                self.convertToInt(startYears)
+                self.convertToInt(endDays)
+                self.convertToInt(endMonths)
+                self.convertToInt(endYears)
 
                 for i in range(len(interestRates)):
                     interestStartDate=startDate+relativedelta(days=startDays[i],months=startMonths[i],years=startYears[i])
@@ -242,7 +246,9 @@ class UserBankInvestment(Utility):
                             "endDate":min(maturityDate,startDate+relativedelta(days=endDays[i],months=endMonths[i],years=endYears[i])),
                             "interestRate":float(interestRates[i])
                         }
-                return self.isValidInterestDurationRange(rateOfInterest),json.dumps(rateOfInterest,indent=4)
+                if self.isValidInterestDurationRange(rateOfInterest):
+                    return self.isValidInterestDurationRange(rateOfInterest),json.dumps(rateOfInterest,indent=4)
+                return self.isValidInterestDurationRange(rateOfInterest),None
         
         i=0
         while startDate<maturityDate:
@@ -255,7 +261,9 @@ class UserBankInvestment(Utility):
             }
             i+=1
             startDate=endDate+relativedelta(days=1)        
-        return self.isValidInterestDurationRange(rateOfInterest),json.dumps(rateOfInterest,indent=4)
+        if self.isValidInterestDurationRange(rateOfInterest):
+            return self.isValidInterestDurationRange(rateOfInterest),json.dumps(rateOfInterest,indent=4)
+        return self.isValidInterestDurationRange(rateOfInterest),None
     
     def addNewBankDeposit(self,userId,bank,amount,interest,investmentDate,maturityDate,interestCalculateType=None,interestType='COMPOUND'):
         self.bankInvestment.addNewDeposit(userId=userId,bank=bank,amount=amount,interest=interest,investmentDate=investmentDate,
