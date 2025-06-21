@@ -196,6 +196,16 @@ class Utility:
                 return False
         return True
     
+    def today(self):
+        return datetime.today()
+    
+    def getNextSipDate(self,sipDate):
+        today=self.today()
+        day,month,year=today.day,today.month,today.year
+        nextSipDate="{}-{}-{}".format(year,month,sipDate)
+        nextSipDate=self.convertStrToDate(date=nextSipDate)
+        nextSipDate=nextSipDate+relativedelta(months=1)
+        return nextSipDate
 class UserBankInvestment(Utility):
     def __init__(self):
         self.interestTypeConverter={
@@ -208,6 +218,7 @@ class UserBankInvestment(Utility):
     
     def isValidInterestDurationRange(self,rateOfInterest):
         interestRates=list(rateOfInterest.values())
+        print("interestRates: ",interestRates)
         for i in range(len(interestRates)-1):
             # print(interestRates[i+1]["startDate"],interestRates[i]["endDate"],(interestRates[i+1]["startDate"]-interestRates[i]["endDate"]).days)
             if (interestRates[i+1]["startDate"]-interestRates[i]["endDate"]).days!=1:
@@ -246,9 +257,10 @@ class UserBankInvestment(Utility):
                             "endDate":min(maturityDate,startDate+relativedelta(days=endDays[i],months=endMonths[i],years=endYears[i])),
                             "interestRate":float(interestRates[i])
                         }
-                if self.isValidInterestDurationRange(rateOfInterest):
-                    return self.isValidInterestDurationRange(rateOfInterest),json.dumps(rateOfInterest,indent=4)
-                return self.isValidInterestDurationRange(rateOfInterest),None
+                isValid=self.isValidInterestDurationRange
+                if isValid:
+                    return isValid,json.dumps(rateOfInterest,indent=4)
+                return isValid,None
         
         i=0
         while startDate<maturityDate:
@@ -260,10 +272,12 @@ class UserBankInvestment(Utility):
                 "interestRate":float(interestRates)
             }
             i+=1
-            startDate=endDate+relativedelta(days=1)        
-        if self.isValidInterestDurationRange(rateOfInterest):
-            return self.isValidInterestDurationRange(rateOfInterest),json.dumps(rateOfInterest,indent=4)
-        return self.isValidInterestDurationRange(rateOfInterest),None
+            startDate=endDate+relativedelta(days=1)
+        print("New Interest Rates: ",rateOfInterest)
+        isValid=self.isValidInterestDurationRange(rateOfInterest)      
+        if isValid:
+            return isValid,json.dumps(rateOfInterest,indent=4)
+        return isValid,None
     
     def addNewBankDeposit(self,userId,bank,amount,interest,investmentDate,maturityDate,interestCalculateType=None,interestType='COMPOUND'):
         self.bankInvestment.addNewDeposit(userId=userId,bank=bank,amount=amount,interest=interest,investmentDate=investmentDate,
@@ -305,6 +319,11 @@ class UserBankInvestment(Utility):
         # return bankDeposits,deposits[bankInvestmentId]
         return deposits[bankInvestmentId]
     
+    def getMaturingBankDepositsWithAutoRenew(self,maturityDate):
+        return self.bankInvestment.getMaturingBankDepositsWithAutoRenew(maturityDate=maturityDate)
+    
+    def updateBankDeposit(self,bankDepositId,columns,values):
+        self.bankInvestment.updateBankDeposit(columns=columns,values=values,bankDepositId=bankDepositId)
 class UserStockInvestment(Utility):
     def __init__(self):
         super().__init__()
@@ -470,6 +489,23 @@ class UserStockInvestment(Utility):
         # return list(map(lambda x: dict(x),stockInfo)),self.combineStockFromInvestments(stockInfo=stockInfo)
         return self.combineStockFromInvestments(stockInfo=stockInfo)
     
+    def getStockName(self,stockId):
+        return self.stockInvestment.getStockName(stockId=stockId)
+    
+    def getSIPToday(self,sipDate):
+        return self.stockInvestment.getSIPToday(sipDate=sipDate)
+    
+    def addNewSip(self,sipAmount,sipDate,sipId,sipUnits,stockId=None,mutualFundId=None):
+        self.stockInvestment.addNewInvestmentDetail(amount=sipAmount,
+                                                    units=sipUnits,
+                                                    investedDate=sipDate,
+                                                    mutualFundId=mutualFundId,
+                                                    stockId=stockId,
+                                                    sipId=sipId)
+        
+    def updateSIP(self,sipId,sipDate):
+        self.stockInvestment.updateSIP(columns=["SIPDate"],values=[sipDate],sipId=sipId)
+    
     def updateStock(self,investmentId,vestingDetails):
         self.stockInvestment.updateStock(columns=["VestingDetails"],
                                          values=[vestingDetails],
@@ -611,6 +647,8 @@ class UserMutualFundInvestment(Utility):
         print("mutualFundInfo: ",mutualFundInfo)
         return self.combineMutualFundsFromInvestmentDetails(mutualFunds=mutualFundInfo)
     
+    def getMutualFundName(self,mutualFundId):
+        return self.mutualFund.getMutualFundName(mutualFundId=mutualFundId)
 class UserInvestments(Utility):
     def __init__(self):
         super().__init__()

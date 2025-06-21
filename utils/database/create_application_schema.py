@@ -1,9 +1,11 @@
 import psycopg2
 import psycopg2.sql as sql
 import json
+from utils.logger import logger
 
 class Database:
     def __init__(self):
+        self.logger=logger()
         with open('utils/config.json') as f:
             config=json.load(f)
             self.databaseConfig = config["personal_wealth_tracker"]["database"]
@@ -19,30 +21,30 @@ class Database:
             #                 user=user,
             #                 password=password,
             #                 host=host)
-            print("Successfully established new connection to the Database : {}\n with User : {}\n Password : {}\n Hosted on {} using the Port {}".format(database,user,password,host,port))
+            self.logger.info("Successfully established new connection to the Database : {}\n with User : {}\n Password : {}\n Hosted on {} using the Port {}".format(database,user,password,host,port))
             return connection
         except Exception as e:
-            print("Failed to Connect to the Database : {}\n with User : {}\n Password : {}\n Hosted on {} using the Port {} \n Due to exception {}".format(database,user,password,host,port,e))
+            self.logger.info("Failed to Connect to the Database : {}\n with User : {}\n Password : {}\n Hosted on {} using the Port {} \n Due to exception {}".format(database,user,password,host,port,e))
     
     def createUser(self,user,password,connection):
         command = sql.SQL("CREATE USER {user} WITH PASSWORD {password} CREATEDB").format(user=sql.Identifier(user),password=sql.Placeholder())
         self.executeCommand(command=command,connection=connection,argument=[password])
-        print("Created the User : {}".format(user))
+        self.logger.info("Created the User : {}".format(user))
 
     def grantRole(self,user,role,connection):
         command=sql.SQL("GRANT {role} TO {user}").format(role=sql.Identifier(role),user=sql.Identifier(user))
         self.executeCommand(command=command,connection=connection)
-        print("Granted the Permissions of {} to {}".format(role,user))
+        self.logger.info("Granted the Permissions of {} to {}".format(role,user))
 
     def createSchema(self,connection,schema,user):
         command=sql.SQL("CREATE SCHEMA IF NOT EXISTS {schema} AUTHORIZATION {user}").format(schema=sql.Identifier(schema),user=sql.Identifier(user))
         self.executeCommand(command=command,connection=connection)
-        print("Created the Schema : {} under the ownership of {}".format(schema,user))
+        self.logger.info("Created the Schema : {} under the ownership of {}".format(schema,user))
 
     def dropSchema(self,connection,schema,user):
         command=sql.SQL("DROP SCHEMA {schema} CASCADE").format(schema=sql.Identifier(schema),user=sql.Identifier(user))
         self.executeCommand(command=command,connection=connection)
-        print("Dropped the Schema : {} owned by {}".format(schema,user))
+        self.logger.info("Dropped the Schema : {} owned by {}".format(schema,user))
 
     def createDatabase(self,connection,database,user):
         command=sql.SQL("CREATE DATABASE {database} OWNER {user}").format(database=sql.Identifier(database),user=sql.Identifier(user))
@@ -52,24 +54,24 @@ class Database:
                 cursor.execute(command)
         finally:
             connection.commit()
-        print("Created the Database : {} under the ownership of {}".format(database,user))
+        self.logger.info("Created the Database : {} under the ownership of {}".format(database,user))
 
     def createTable(self,connection,schema,table,columns):
         command=sql.SQL("CREATE TABLE IF NOT EXISTS {schema}.{table} ({columns})").format(schema=sql.Identifier(schema),
                                                                                           table=sql.Identifier(table),
                                                                                           columns=sql.SQL(", ").join([sql.Composed(sql.Identifier(columnName)+sql.SQL(" ")+sql.SQL(columnType))  for columnName,columnType in columns.items()]))
         self.executeCommand(command=command,connection=connection)
-        print("Created the Table : {} within the schema : {} with columns : {}".format(table,schema,columns))
+        self.logger.info("Created the Table : {} within the schema : {} with columns : {}".format(table,schema,columns))
 
     def executeCommand(self,command,connection,argument=None):
-        print("Executing the command : {}".format(command.as_string(connection)))
+        self.logger.info("Executing the command : {}".format(command.as_string(connection)))
         with connection.cursor() as cursor:
             if argument:
                 cursor.execute(command,argument)
             else:
                 cursor.execute(command)
             connection.commit()
-        print("Executed the command : {}".format(command.as_string(connection)))
+        self.logger.info("Executed the command : {}".format(command.as_string(connection)))
 
 if __name__ == '__main__':
     database = Database()
@@ -198,7 +200,7 @@ if __name__ == '__main__':
     
     database.createTable(schema=database.databaseConfig["application_schema"],
                          table="BANK_DEPOSITS",
-                         columns={"Id":"SERIAL","BankName":"VARCHAR(50)","Amount":"BIGINT NOT NULL","InterestRate":"JSONB NOT NULL","InvestedDate":"TIMESTAMP NOT NULL","InterestType":"VARCHAR(10) DEFAULT 'COMPOUND'","MaturityDate":"TIMESTAMP NOT NULL","InterestCalculateDuration":"INTEGER","AutoRenew":"BOOLEAN DEFAULT true"},
+                         columns={"Id":"SERIAL","BankName":"VARCHAR(50)","Amount":"BIGINT NOT NULL","InterestRate":"JSONB NOT NULL","InvestedDate":"TIMESTAMP NOT NULL","InterestType":"VARCHAR(10) DEFAULT 'COMPOUND'","MaturityDate":"TIMESTAMP NOT NULL","InterestCalculateDuration":"INTEGER","AutoRenew":"BOOLEAN DEFAULT false","RenewalDate":"TIMESTAMP"},
                          connection=connection)
     command = sql.SQL("ALTER TABLE {schema}.{table} ADD CONSTRAINT pk_BANK_DEPOSITS PRIMARY KEY ({column})").format(schema=sql.Identifier(database.databaseConfig["application_schema"]),
                                                                                                             table=sql.Identifier("BANK_DEPOSITS"),

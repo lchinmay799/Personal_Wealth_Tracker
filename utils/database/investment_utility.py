@@ -15,6 +15,7 @@ class BankDeposits(Database):
         self.interestTypeColumn="InterestType"
         self.maturityDateColumn="MaturityDate"
         self.interestDurationColumn="InterestCalculateDuration"
+        self.renewalDateColumn="RenewalDate"
 
     def addNewDeposit(self,userId,bank,amount,interest,investmentDate,interestType,maturityDate,interestDuration=None,newInvestment=True):
         command=sql.SQL("INSERT INTO {schema}.{table} ({columns}) VALUES ({values}) RETURNING {return_column}").format(schema=sql.Identifier(self.schema),
@@ -101,6 +102,35 @@ class BankDeposits(Database):
                 response = self.executeCommand(command=command,cursor=cursor,argument=[bankInvestmentId])
                 return response.fetchall()
     
+    def getMaturingBankDepositsWithAutoRenew(self,maturityDate):
+        command=sql.SQL("""SELECT {columns} FROM {schema}.{table} WHERE {autoRenew}=%s AND {maturityDate}=%s""").format(schema=sql.Identifier(self.schema),
+                                                                                                  table=sql.Identifier(self.table),
+                                                                                                  columns=sql.SQL(", ").join(list(map(lambda column:sql.Identifier(column),
+                                                                                                                                      [self.idColumn,
+                                                                                                                                        self.renewalDateColumn,
+                                                                                                                                        self.interestRateColumn,
+                                                                                                                                        self.maturityDateColumn,
+                                                                                                                                        self.interestTypeColumn,
+                                                                                                                                        self.investedDateColumn,
+                                                                                                                                        self.interestDurationColumn]))),
+                                                                                                  maturityDate=sql.Identifier("MaturityDate"),
+                                                                                                  autoRenew=sql.Identifier("AutoRenew"))
+        with self.connect() as connection:
+            with connection.cursor(cursor_factory=RealDictCursor) as cursor:
+                response=self.executeCommand(command=command,cursor=cursor,argument=[True,maturityDate])
+                return response.fetchall()
+        
+    def updateBankDeposit(self,columns,values,bankDepositId):
+        updateColumns=[sql.SQL("{column} = {value}").format(column=sql.Identifier(column),
+                                                            value=sql.Literal(value)) for column,value in zip(columns,values)]
+        command=sql.SQL("""UPDATE {schema}.{table} SET {updateColumns} WHERE {id} = %s""").format(schema=sql.Identifier(self.schema),
+                                                                                                        table=sql.Identifier(self.table),
+                                                                                                        updateColumns=sql.SQL(", ").join(updateColumns),
+                                                                                                        id=sql.Identifier(self.idColumn))
+        with self.connect() as connection:
+            with connection.cursor(cursor_factory=RealDictCursor) as cursor:
+                self.executeCommand(command=command,cursor=cursor,argument=[bankDepositId])
+
     def getAllBankDeposits(self):
         command = sql.SQL("SELECT * FROM {schema}.{table}").format(schema=sql.Identifier(self.schema),
                                                                     table=sql.Identifier(self.table))
@@ -201,7 +231,8 @@ class Stock(Database):
         command=sql.SQL("""SELECT {columns} FROM {schema}.{table} JOIN {schema}.{investmentTable} ON {schema}.{table}.{id}={schema}.{investmentTable}.{stockIdColumn}
                         LEFT JOIN {schema}.{investmentDetailsTable} ON {schema}.{table}.{id} = {schema}.{investmentDetailsTable}.{stockIdColumn}
                         WHERE {schema}.{investmentTable}.{id} = %s""").format(schema = sql.Identifier(self.schema),
-                                                        table = sql.Identifier(self.table),                                                        investmentDetailsTable = sql.Identifier("INVESTMENT_DETAILS"),
+                                                        table = sql.Identifier(self.table),                                                        
+                                                        investmentDetailsTable = sql.Identifier("INVESTMENT_DETAILS"),
                                                         investmentTable=sql.Identifier("INVESTMENTS"),
                                                         id=sql.Identifier(self.idColumn),
                                                         stockIdColumn=sql.Identifier("StockId"),
@@ -211,6 +242,16 @@ class Stock(Database):
                 response = self.executeCommand(cursor=cursor,command=command,argument=[stockInvestmentId])
                 return response.fetchall()
             
+    def getStockName(self,stockId):
+        command=sql.SQL("SELECT {column} FROM {schema}.{table} WHERE {id}=%s").format(schema=sql.Identifier(self.schema),
+                                                                                           table=sql.Identifier(self.table),
+                                                                                           column=sql.Identifier("StockName"),
+                                                                                           id=sql.Identifier(self.idColumn))
+        with self.connect() as connection:
+            with connection.cursor(cursor_factory=RealDictCursor) as cursor:
+                response=self.executeCommand(command=command,cursor=cursor,argument=[stockId])
+                return response.fetchone()
+    
     def updateStock(self,columns,values,investmentId):
         updateColumns=[sql.SQL("{column} = {value}").format(column=sql.Identifier(column),
                                                             value=sql.Literal(value)) for column,value in zip(columns,values)]
@@ -345,6 +386,16 @@ class MutualFund(Database):
             with connection.cursor(cursor_factory=RealDictCursor) as cursor:
                 response=self.executeCommand(command=command,cursor=cursor,argument=[investmentId])
                 return response.fetchall()
+            
+    def getMutualFundName(self,mutualFundId):
+        command=sql.SQL("""SELECT {scheme} FROM {schema}.{table} WHERE {mutualFundId}=%s""").format(schema=sql.Identifier(self.schema),
+                                                                                                    table=sql.Identifier(self.table),
+                                                                                                    scheme=sql.Identifier(self.schemeColumn),
+                                                                                                    mutualFundId=sql.Identifier(self.idColumn))
+        with self.connect() as connection:
+            with connection.cursor(cursor_factory=RealDictCursor) as cursor:
+                response=self.executeCommand(command=command,argument=[mutualFundId],cursor=cursor)
+                return response.fetchone()
     
     def getAllMutualFunds(self):
         command = sql.SQL("SELECT * FROM {schema}.{table}").format(schema=sql.Identifier(self.schema),

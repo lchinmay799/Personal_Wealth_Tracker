@@ -135,19 +135,28 @@ class Database:
                 response=self.executeCommand(command=command,cursor=cursor,argument=[userId])
                 return response
             
-    def updateSIP(self,columns,values,investmentId,investmentTypeId):
+    def updateSIP(self,columns,values,investmentId=None,investmentTypeId=None,sipId=None):
         updateColumns=[sql.SQL("{column} = {value}").format(column=sql.Identifier(column),
                                                             value=sql.Literal(value)) for column,value in zip(columns,values)]
-        command=sql.SQL("""UPDATE {schema}.{table} SET {updateColumns} WHERE {schema}.{table}.{investmentTypeId} = 
-                (SELECT {investmentTypeId} FROM {schema}.{investmentTable} WHERE {schema}.{investmentTable}.{id} = %s)""").format(schema=sql.Identifier(self.schema),
-                                                                                                        table=sql.Identifier("SIP"),
-                                                                                                        updateColumns=sql.SQL(", ").join(updateColumns),
-                                                                                                        investmentTypeId=sql.Identifier(investmentTypeId),
-                                                                                                        investmentTable=sql.Identifier("INVESTMENTS"),
-                                                                                                        id=sql.Identifier("Id"))
+        if sipId is None:
+            command=sql.SQL("""UPDATE {schema}.{table} SET {updateColumns} WHERE {schema}.{table}.{investmentTypeId} = 
+                    (SELECT {investmentTypeId} FROM {schema}.{investmentTable} WHERE {schema}.{investmentTable}.{id} = %s)""").format(schema=sql.Identifier(self.schema),
+                                                                                                            table=sql.Identifier("SIP"),
+                                                                                                            updateColumns=sql.SQL(", ").join(updateColumns),
+                                                                                                            investmentTypeId=sql.Identifier(investmentTypeId),
+                                                                                                            investmentTable=sql.Identifier("INVESTMENTS"),
+                                                                                                            id=sql.Identifier("Id"))
+            argument=[investmentId]
+        else:
+            command=sql.SQL("""UPDATE {schema}.{table} SET {updateColumns} WHERE {sipId} = %s""").format(schema=sql.Identifier(self.schema),
+                                                                                                         table=sql.Identifier("SIP"),
+                                                                                                         updateColumns=sql.SQL(", ").join(updateColumns),
+                                                                                                         sipId=sql.Identifier("Id"))
+            argument=[sipId]
+            
         with self.connect() as connection:
             with connection.cursor(cursor_factory=RealDictCursor) as cursor:
-                self.executeCommand(command=command,cursor=cursor,argument=[investmentId])
+                self.executeCommand(command=command,cursor=cursor,argument=argument)
 
     def getInvestmentType(self,investmentId):
         command=sql.SQL("SELECT {investmentType} FROM {schema}.{table} WHERE {investmentId}=%s").format(schema=sql.Identifier(self.schema),
@@ -158,3 +167,15 @@ class Database:
             with connection.cursor(cursor_factory=RealDictCursor) as cursor:
                 response=self.executeCommand(command=command,cursor=cursor,argument=[investmentId])
                 return response.fetchone()
+            
+    def getSIPToday(self,sipDate):
+        command=sql.SQL("""SELECT {columns} FROM {schema}.{table}  WHERE {sipDate}=%s""").format(schema=sql.Identifier(self.schema),
+                                                                                        table=sql.Identifier("SIP"),
+                                                                                        columns=sql.SQL(", ").join(list(map(lambda column:sql.Identifier(column),
+                                                                                                                            ["Id","StockId","MutualFundId",
+                                                                                                                             "SIPAmount"]))),
+                                                                                        sipDate=sql.Identifier("SIPDate"))
+        with self.connect() as connection:
+            with connection.cursor(cursor_factory=RealDictCursor) as cursor:
+                response=self.executeCommand(command=command,cursor=cursor,argument=[sipDate])
+                return response.fetchall()

@@ -1,12 +1,19 @@
 import string
 import random
+import logging
+
 import base64
 from jwt.exceptions import InvalidSignatureError,ExpiredSignatureError
-from flask import Flask,render_template,request,redirect,url_for,make_response,flash,jsonify
+from flask import Flask,render_template,request,redirect,url_for,make_response,flash
 from datetime import timedelta
 from flask_jwt_extended import JWTManager,unset_jwt_cookies,jwt_required
+
+from utils.logger import logger
 from utils.database.account_utility import UserAccount
 from utils.generic_util import UserSession,UserBankInvestment,UserStockInvestment,UserMutualFundInvestment,UserInvestments
+from utils.scheduled_jobs import Jobs
+
+logger=logging.getLogger(name="PersonalWealthTracker")
 
 app=Flask(__name__)
 jwt=JWTManager(app)
@@ -22,7 +29,11 @@ app.config['JWT_COOKIE_CSRF_PROTECT']=False
 
 @app.route('/',methods=["POST","GET"])
 def homePage():
+    jobs=Jobs()
+    jobs.renewMaturedBankDeposits()
+    # jobs.addNewSip()
     userAction = request.form.get("userAction")
+    print("Checking Token Expiry ...")
     userSession = UserSession()
     if userAction:
         user = UserAccount()
@@ -91,13 +102,18 @@ def homePage():
                 flash(message="Passwords Do not Match !!",category="error")
                 return redirect(url_for('resetPassword'))
     else:
-        print("checking token expiry")
+        print("Checking Token Expiry ... ...")
         is_access_token_valid,is_refresh_token_valid=userSession.checkTokenExpiry()
         if is_access_token_valid:
+            userId=userSession.getUserId(token=is_access_token_valid)
+            print("Valid Refresh Token for the user : {}".format(userId))
             return render_template('homePage.html',logged_in=True)
         elif is_refresh_token_valid:
+            userId=userSession.getUserId(token=is_refresh_token_valid)
+            print("Refresh Token expired for the user : {}".format(userId))
             return redirect(url_for('refreshToken'))
         else:
+            print("Tokens expired for the user")
             flash(message="Your Session Expired !! Login Again.",category="error")
             return redirect(url_for("login"))
 
@@ -135,41 +151,54 @@ def logout():
 
 @app.route('/myinvestments',methods=["GET"])
 def trackInvestments():
-    print("checking token expiry")
+    print("Checking Token Expiry ...")
     userSession = UserSession()
     is_access_token_valid,is_refresh_token_valid=userSession.checkTokenExpiry()
     if is_access_token_valid:
+        userId=userSession.getUserId(token=is_access_token_valid)
+        print("Valid Refresh Token for the user : {}".format(userId))
         utility = UserInvestments()
         combinedInvestment=utility.getUserCombinedInvestments(userId=userSession.getUserId(token=is_access_token_valid))
-        print("combinedInvestment: ",combinedInvestment)
+        print("Combined Investment of the User {} is {}".format(userId,combinedInvestment))
         return render_template('myInvestments.html',combinedInvestment=combinedInvestment)
     elif is_refresh_token_valid:
+        userId=userSession.getUserId(token=is_refresh_token_valid)
+        print("Refresh Token expired for the user : {}".format(userId))
         return redirect(url_for('refreshToken'))
     else:
+        print("Tokens expired for the user")
         flash(message="Your Session Expired !! Login Again.",category="error")
         return redirect(url_for("login"))
 
 @app.route('/myinvestments/stocks',methods=["GET"])
 def stocksInvested():
-    print("checking token expiry")
+    print("Checking Token Expiry ...")
     userSession = UserSession()
     is_access_token_valid,is_refresh_token_valid=userSession.checkTokenExpiry()
     if is_access_token_valid:
+        userId=userSession.getUserId(token=is_access_token_valid)
+        print("Valid Refresh Token for the user : {}".format(userId))
         utility = UserStockInvestment()
         stocks,individualAmount = utility.getUserStocks(userId=userSession.getUserId(token=is_access_token_valid))
         print("Stocks Invested : ",stocks)
         return render_template('myStocks.html',stocks=stocks,combinedInvestment=individualAmount)
     elif is_refresh_token_valid:
+        userId=userSession.getUserId(token=is_refresh_token_valid)
+        print("Refresh Token expired for the user : {}".format(userId))
         return redirect(url_for('refreshToken'))
     else:
+        print("Tokens expired for the user")
         flash(message="Your Session Expired !! Login Again.",category="error")
         return redirect(url_for("login"))
     
 @app.route('/myinvestments/stocks/<stockId>')
 def getStockInfo(stockId):
+    print("Checking Token Expiry ...")
     userSession = UserSession()
     is_access_token_valid,is_refresh_token_valid=userSession.checkTokenExpiry()
     if is_access_token_valid:
+        userId=userSession.getUserId(token=is_access_token_valid)
+        print("Valid Refresh Token for the user : {}".format(userId))
         utility=UserStockInvestment()
         stockId = int(base64.b64decode(stockId))
         combinedStocksInfo=utility.getStockInformation(stockId=stockId)
@@ -178,20 +207,29 @@ def getStockInfo(stockId):
         return render_template('stockInfo.html',combinedStocksInfo=combinedStocksInfo,
                                vestingStock=combinedStocksInfo.get("vestingInfo") is not None)
     elif is_refresh_token_valid:
+        userId=userSession.getUserId(token=is_refresh_token_valid)
+        print("Refresh Token expired for the user : {}".format(userId))
         return redirect(url_for('refreshToken'))
     else:
+        print("Tokens expired for the user")
         flash(message="Your Session Expired !! Login Again.",category="error")
         return redirect(url_for("login"))
 
 @app.route('/myinvestments/stocks/addInvestment',methods=["GET"])
 def addStockInvestment():
+    print("Checking Token Expiry ...")
     userSession = UserSession()
     is_access_token_valid,is_refresh_token_valid=userSession.checkTokenExpiry()
     if is_access_token_valid:
+        userId=userSession.getUserId(token=is_access_token_valid)
+        print("Valid Refresh Token for the user : {}".format(userId))
         return render_template('addStockInvestment.html')
     elif is_refresh_token_valid:
+        userId=userSession.getUserId(token=is_refresh_token_valid)
+        print("Refresh Token expired for the user : {}".format(userId))
         return redirect(url_for('refreshToken'))
     else:
+        print("Tokens expired for the user")
         flash(message="Your Session Expired !! Login Again.",category="error")
         return redirect(url_for("login"))
 
@@ -213,9 +251,12 @@ def searchStockInfo():
 
 @app.route('/myinvestments/stocks/addInvestment/addStockInvestment',methods=["POST"])
 def newStockInvestment():
+    print("Checking Token Expiry ...")
     userSession = UserSession()
     is_access_token_valid,is_refresh_token_valid=userSession.checkTokenExpiry()
     if is_access_token_valid:
+        userId=userSession.getUserId(token=is_access_token_valid)
+        print("Valid Refresh Token for the user : {}".format(userId))
         userId=userSession.getUserId(token=is_access_token_valid)
         utility=UserStockInvestment()
         stockExchange=request.form.get("stockExchange")
@@ -226,7 +267,8 @@ def newStockInvestment():
         investedDate=request.form.get("investedDate")
         if stockInvestmentType == "SIP":
             sipAmount=request.form.get("sipAmount")
-            sipDate = request.form.get("sipDate")
+            sipDate = int(request.form.get("sipDate"))
+            sipDate = utility.getNextSipDate(sipDate=sipDate)
             utility.addStockInvestment(userId=userId,stockName=stockName,investedDate=investedDate,
                                     sip=True,oneTime=False,sipAmount=sipAmount,sipDate=sipDate)
         else:
@@ -245,8 +287,11 @@ def newStockInvestment():
                                     sip=False,oneTime=True,vestingDetails=vestingDetailJson,units=stockUnits,oneTimeInvestmentAmount=stockUnits*stockPrice)
         return redirect(url_for('stocksInvested'))
     elif is_refresh_token_valid:
+        userId=userSession.getUserId(token=is_refresh_token_valid)
+        print("Refresh Token expired for the user : {}".format(userId))
         return redirect(url_for('refreshToken'))
     else:
+        print("Tokens expired for the user")
         flash(message="Your Session Expired !! Login Again.",category="error")
         return redirect(url_for("login"))
     
@@ -255,6 +300,8 @@ def updateVestingDetail():
     userSession=UserSession()
     is_access_token_valid,is_refresh_token_valid=userSession.checkTokenExpiry()
     if is_access_token_valid:
+        userId=userSession.getUserId(token=is_access_token_valid)
+        print("Valid Refresh Token for the user : {}".format(userId))
         utility=UserStockInvestment()
         investmentId=request.form.get("investmentId")
         vestingDates=request.form.getlist("vestingDate[]")
@@ -273,16 +320,22 @@ def updateVestingDetail():
                 utility.updateStock(investmentId=investmentId,vestingDetails=vestingDetailJson)
                 return redirect(url_for('stocksInvested'))
     elif is_refresh_token_valid:
+        userId=userSession.getUserId(token=is_refresh_token_valid)
+        print("Refresh Token expired for the user : {}".format(userId))
         return redirect(url_for('refreshToken'))
     else:
+        print("Tokens expired for the user")
         flash(message="Your Session Expired !! Login Again.",category="error")
         return redirect(url_for("login"))
 
 @app.route('/myinvestments/mutualfunds',methods=["GET"])
 def mutualFundsInvested():
+    print("Checking Token Expiry ...")
     userSession = UserSession()
     is_access_token_valid,is_refresh_token_valid=userSession.checkTokenExpiry()
     if is_access_token_valid:
+        userId=userSession.getUserId(token=is_access_token_valid)
+        print("Valid Refresh Token for the user : {}".format(userId))
         userId=userSession.getUserId(token=is_access_token_valid)
         utility=UserMutualFundInvestment()
         mutualFunds,combinedMutualFundInfo=utility.getUserMutualFunds(userId=userId)
@@ -290,36 +343,51 @@ def mutualFundsInvested():
         print("mutualFunds: ",mutualFunds)
         return render_template('myMutualFunds.html',mutualFunds=mutualFunds,combinedInvestment=combinedMutualFundInfo)
     elif is_refresh_token_valid:
+        userId=userSession.getUserId(token=is_refresh_token_valid)
+        print("Refresh Token expired for the user : {}".format(userId))
         return redirect(url_for('refreshToken'))
     else:
+        print("Tokens expired for the user")
         flash(message="Your Session Expired !! Login Again.",category="error")
         return redirect(url_for("login"))
     
 @app.route('/myinvestments/mutualfunds/<mutualFundId>')
 def getMutualFundInfo(mutualFundId):
+    print("Checking Token Expiry ...")
     userSession = UserSession()
     is_access_token_valid,is_refresh_token_valid=userSession.checkTokenExpiry()
     if is_access_token_valid:
+        userId=userSession.getUserId(token=is_access_token_valid)
+        print("Valid Refresh Token for the user : {}".format(userId))
         utility=UserMutualFundInvestment()
         mutualFundId = int(base64.b64decode(mutualFundId))
         mutualFundInfo=utility.getMutualFund(investmentId=mutualFundId)
         print("mutualFundInfo: ",mutualFundInfo)
         return render_template('mutualFundInfo.html',combinedMutualFundsInfo=mutualFundInfo)
     elif is_refresh_token_valid:
+        userId=userSession.getUserId(token=is_refresh_token_valid)
+        print("Refresh Token expired for the user : {}".format(userId))
         return redirect(url_for('refreshToken'))
     else:
+        print("Tokens expired for the user")
         flash(message="Your Session Expired !! Login Again.",category="error")
         return redirect(url_for("login"))
     
 @app.route('/myinvestments/mutualfunds/addInvestment',methods=["GET"])
 def addMutualFundInvestment():
+    print("Checking Token Expiry ...")
     userSession = UserSession()
     is_access_token_valid,is_refresh_token_valid=userSession.checkTokenExpiry()
     if is_access_token_valid:
+        userId=userSession.getUserId(token=is_access_token_valid)
+        print("Valid Refresh Token for the user : {}".format(userId))
         return render_template('addMutualFundInvestment.html')
     elif is_refresh_token_valid:
+        userId=userSession.getUserId(token=is_refresh_token_valid)
+        print("Refresh Token expired for the user : {}".format(userId))
         return redirect(url_for('refreshToken'))
     else:
+        print("Tokens expired for the user")
         flash(message="Your Session Expired !! Login Again.",category="error")
         return redirect(url_for("login"))
     
@@ -342,9 +410,12 @@ def searchMutualFund():
     
 @app.route('/myinvestments/mutualfunds/addInvestment/addMutualFundInvestment',methods=["POST"])
 def newMutualFund():
+    print("Checking Token Expiry ...")
     userSession = UserSession()
     is_access_token_valid,is_refresh_token_valid=userSession.checkTokenExpiry()
     if is_access_token_valid:
+        userId=userSession.getUserId(token=is_access_token_valid)
+        print("Valid Refresh Token for the user : {}".format(userId))
         userId=userSession.getUserId(token=is_access_token_valid)
         utility=UserMutualFundInvestment()
         mutualFundName=request.form.get("mutualFundName").upper()
@@ -373,16 +444,22 @@ def newMutualFund():
 
         return redirect(url_for('mutualFundsInvested'))
     elif is_refresh_token_valid:
+        userId=userSession.getUserId(token=is_refresh_token_valid)
+        print("Refresh Token expired for the user : {}".format(userId))
         return redirect(url_for('refreshToken'))
     else:
+        print("Tokens expired for the user")
         flash(message="Your Session Expired !! Login Again.",category="error")
         return redirect(url_for("login"))
 
 @app.route('/myinvestments/<investmentType>/updateSIP',methods=["POST"])
 def updateSIP(investmentType):
+    print("Checking Token Expiry ...")
     userSession = UserSession()
     is_access_token_valid,is_refresh_token_valid=userSession.checkTokenExpiry()
     if is_access_token_valid:
+        userId=userSession.getUserId(token=is_access_token_valid)
+        print("Valid Refresh Token for the user : {}".format(userId))
         utility=UserInvestments()
         investmentId=request.form.get("investmentId")
         sipAmount=request.form.get("sipAmount")
@@ -400,16 +477,22 @@ def updateSIP(investmentType):
         elif investmentType=="mutualfunds":
             return redirect(url_for('mutualFundsInvested'))
     elif is_refresh_token_valid:
+        userId=userSession.getUserId(token=is_refresh_token_valid)
+        print("Refresh Token expired for the user : {}".format(userId))
         return redirect(url_for('refreshToken'))
     else:
+        print("Tokens expired for the user")
         flash(message="Your Session Expired !! Login Again.",category="error")
         return redirect(url_for("login"))
 
 @app.route('/myinvestments/bankdeposits',methods=["GET"])
 def bankDepositsInvested():
+    print("Checking Token Expiry ...")
     userSession = UserSession()
     is_access_token_valid,is_refresh_token_valid=userSession.checkTokenExpiry()
     if is_access_token_valid:
+        userId=userSession.getUserId(token=is_access_token_valid)
+        print("Valid Refresh Token for the user : {}".format(userId))
         userId=userSession.getUserId(token=is_access_token_valid)
         utility=UserBankInvestment()
         bankDeposits,amount=utility.getUserCombinedBankDepositAmount(userId=userId)
@@ -417,44 +500,62 @@ def bankDepositsInvested():
 
         return render_template('myBankDeposits.html',combinedInvestment=amount,bankDeposits=bankDeposits)
     elif is_refresh_token_valid:
+        userId=userSession.getUserId(token=is_refresh_token_valid)
+        print("Refresh Token expired for the user : {}".format(userId))
         return redirect(url_for('refreshToken'))
     else:
+        print("Tokens expired for the user")
         flash(message="Your Session Expired !! Login Again.",category="error")
         return redirect(url_for("login"))
     
 @app.route('/myinvestments/bankdeposits/<bankInvestmentId>')
 def getBankDepositInfo(bankInvestmentId):
+    print("Checking Token Expiry ...")
     userSession = UserSession()
     is_access_token_valid,is_refresh_token_valid=userSession.checkTokenExpiry()
     if is_access_token_valid:
+        userId=userSession.getUserId(token=is_access_token_valid)
+        print("Valid Refresh Token for the user : {}".format(userId))
         utility=UserBankInvestment()
         bankInvestmentId = int(base64.b64decode(bankInvestmentId))
         combinedDepositInfo=utility.getBankDepositInfomation(bankInvestmentId=bankInvestmentId)
         return render_template('bankDepositInfo.html',combinedDepositInfo=combinedDepositInfo)
     elif is_refresh_token_valid:
+        userId=userSession.getUserId(token=is_refresh_token_valid)
+        print("Refresh Token expired for the user : {}".format(userId))
         return redirect(url_for('refreshToken'))
     else:
+        print("Tokens expired for the user")
         flash(message="Your Session Expired !! Login Again.",category="error")
         return redirect(url_for("login"))
 
 @app.route('/myinvestments/bankdeposits/addInvestment',methods=["GET"])
 def addBankDeposit():
 
+    print("Checking Token Expiry ...")
     userSession = UserSession()
     is_access_token_valid,is_refresh_token_valid=userSession.checkTokenExpiry()
     if is_access_token_valid:
+        userId=userSession.getUserId(token=is_access_token_valid)
+        print("Valid Refresh Token for the user : {}".format(userId))
         return render_template('addBankDeposits.html')
     elif is_refresh_token_valid:
+        userId=userSession.getUserId(token=is_refresh_token_valid)
+        print("Refresh Token expired for the user : {}".format(userId))
         return redirect(url_for('refreshToken'))
     else:
+        print("Tokens expired for the user")
         flash(message="Your Session Expired !! Login Again.",category="error")
         return redirect(url_for("login"))
 
 @app.route('/myinvestments/bankdeposits/addInvestment/addBankDeposit',methods=["POST","GET"])
 def newBankDeposit():
+    print("Checking Token Expiry ...")
     userSession = UserSession()
     is_access_token_valid,is_refresh_token_valid=userSession.checkTokenExpiry()
     if is_access_token_valid:
+        userId=userSession.getUserId(token=is_access_token_valid)
+        print("Valid Refresh Token for the user : {}".format(userId))
         userId=userSession.getUserId(token=is_access_token_valid)
         bankName=request.form.get("Bank").upper()
         principalAmount = request.form.get("Amount")
@@ -505,7 +606,7 @@ def newBankDeposit():
                                                                      interestCalculateType=interestCalculateType,interestType=interestType)
                 print(interestRateJson)
 
-        utility.addNewBankDeposit(userId=userId,bank=bankName,amount=principalAmount,interest=interestRateJson,
+        utility.addNewBankDeposit(userId=userId,bank=bankName,amount=principalAmount,interest=interestRateJson,interestCalculateType=interestCalculateType,
                                   investmentDate=invsetmentDate,maturityDate=maturityDate,interestType=interestType)
         deposits=utility.getAllBankInvestments()
         for i in deposits:
@@ -513,8 +614,11 @@ def newBankDeposit():
         return redirect(url_for('bankDepositsInvested'))
 
     elif is_refresh_token_valid:
+        userId=userSession.getUserId(token=is_refresh_token_valid)
+        print("Refresh Token expired for the user : {}".format(userId))
         return redirect(url_for('refreshToken'))
     else:
+        print("Tokens expired for the user")
         flash(message="Your Session Expired !! Login Again.",category="error")
         return redirect(url_for("login"))
     
