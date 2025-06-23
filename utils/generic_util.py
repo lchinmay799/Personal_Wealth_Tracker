@@ -257,7 +257,7 @@ class UserBankInvestment(Utility):
                             "endDate":min(maturityDate,startDate+relativedelta(days=endDays[i],months=endMonths[i],years=endYears[i])),
                             "interestRate":float(interestRates[i])
                         }
-                isValid=self.isValidInterestDurationRange
+                isValid=self.isValidInterestDurationRange(rateOfInterest=rateOfInterest)
                 if isValid:
                     return isValid,json.dumps(rateOfInterest,indent=4)
                 return isValid,None
@@ -279,8 +279,8 @@ class UserBankInvestment(Utility):
             return isValid,json.dumps(rateOfInterest,indent=4)
         return isValid,None
     
-    def addNewBankDeposit(self,userId,bank,amount,interest,investmentDate,maturityDate,interestCalculateType=None,interestType='COMPOUND'):
-        self.bankInvestment.addNewDeposit(userId=userId,bank=bank,amount=amount,interest=interest,investmentDate=investmentDate,
+    def addNewBankDeposit(self,userId,bank,amount,interest,investmentDate,maturityDate,interestCalculateType=None,interestType='COMPOUND',autoRenew=None):
+        self.bankInvestment.addNewDeposit(userId=userId,bank=bank,amount=amount,interest=interest,investmentDate=investmentDate,autoRenew=autoRenew,
                                   interestType=interestType,maturityDate=maturityDate,interestDuration=self.interestTypeConverter.get(interestCalculateType))
         
     def getAllBankInvestments(self):

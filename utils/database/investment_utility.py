@@ -16,8 +16,9 @@ class BankDeposits(Database):
         self.maturityDateColumn="MaturityDate"
         self.interestDurationColumn="InterestCalculateDuration"
         self.renewalDateColumn="RenewalDate"
+        self.autoRenewColumn="AutoRenew"
 
-    def addNewDeposit(self,userId,bank,amount,interest,investmentDate,interestType,maturityDate,interestDuration=None,newInvestment=True):
+    def addNewDeposit(self,userId,bank,amount,interest,investmentDate,interestType,maturityDate,interestDuration=None,newInvestment=True,autoRenew=False):
         command=sql.SQL("INSERT INTO {schema}.{table} ({columns}) VALUES ({values}) RETURNING {return_column}").format(schema=sql.Identifier(self.schema),
                                                                                             table=sql.Identifier(self.table),
                                                                                             columns=sql.SQL(", ").join([sql.Identifier(self.bankNameColumn),
@@ -26,14 +27,16 @@ class BankDeposits(Database):
                                                                                                                         sql.Identifier(self.investedDateColumn),
                                                                                                                         sql.Identifier(self.interestTypeColumn),
                                                                                                                         sql.Identifier(self.maturityDateColumn),
-                                                                                                                        sql.Identifier(self.interestDurationColumn)]),
+                                                                                                                        sql.Identifier(self.interestDurationColumn),
+                                                                                                                        sql.Identifier(self.autoRenewColumn)]),
                                                                                             values=sql.SQL(", ").join([sql.Literal(bank),
                                                                                                                        sql.Literal(amount),
                                                                                                                        sql.Literal(interest),
                                                                                                                        sql.Literal(investmentDate),
                                                                                                                        sql.Literal(interestType),
                                                                                                                        sql.Literal(maturityDate),
-                                                                                                                       sql.Literal(interestDuration)]),
+                                                                                                                       sql.Literal(interestDuration),
+                                                                                                                       sql.Literal(autoRenew)]),
                                                                                             return_column=sql.Identifier(self.idColumn))
         
         with self.connect() as connection:

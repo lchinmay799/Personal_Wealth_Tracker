@@ -7,6 +7,7 @@ from jwt.exceptions import InvalidSignatureError,ExpiredSignatureError
 from flask import Flask,render_template,request,redirect,url_for,make_response,flash
 from datetime import timedelta
 from flask_jwt_extended import JWTManager,unset_jwt_cookies,jwt_required
+from apscheduler.schedulers.background import BackgroundScheduler
 
 from utils.logger import logger
 from utils.database.account_utility import UserAccount
@@ -564,6 +565,7 @@ def newBankDeposit():
         maturityYears=request.form.get("maturityYears")
         maturityMonths=request.form.get("maturityMonths")
         maturityDays=request.form.get("maturityDays")
+        autoRenew=request.form.get("autoRenew",False)
 
         utility=UserBankInvestment()
         isValid,maturityDate=utility.isValidMaturityDate(maturityDate=[maturityDays,maturityMonths,maturityYears],startDate=invsetmentDate)
@@ -572,7 +574,8 @@ def newBankDeposit():
             response = make_response(redirect(url_for('addBankDeposit')))
             return response
         print(userId,principalAmount,interestType,invsetmentDate,type(invsetmentDate))
-        
+        if not autoRenew:
+            autoRenew=True
         if interestType == "SIMPLE":
             rateOfInterest = request.form.get("simpleInterestRate")
             interestCalculateType = request.form.get("simpleInterestCalculateType")
@@ -607,7 +610,7 @@ def newBankDeposit():
                 print(interestRateJson)
 
         utility.addNewBankDeposit(userId=userId,bank=bankName,amount=principalAmount,interest=interestRateJson,interestCalculateType=interestCalculateType,
-                                  investmentDate=invsetmentDate,maturityDate=maturityDate,interestType=interestType)
+                                  investmentDate=invsetmentDate,maturityDate=maturityDate,interestType=interestType,autoRenew=autoRenew)
         deposits=utility.getAllBankInvestments()
         for i in deposits:
             print(i)
@@ -631,4 +634,9 @@ def markInvestmentInactive():
     return {"redirect":"/myinvestments/{}".format(investmentType)}
 
 if __name__ == '__main__':
+    jobs=Jobs()
+    scheduler=BackgroundScheduler()
+    autoRenewJob=scheduler.add_job(jobs.renewMaturedBankDeposits,'cron',hour=0,minute=0)
+    addSipJob=scheduler.add_job(jobs.addNewSip,'cron',hour=0,minute=0)
+    scheduler.start()
     app.run(debug=True)
