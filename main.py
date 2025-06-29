@@ -30,9 +30,6 @@ app.config['JWT_COOKIE_CSRF_PROTECT']=False
 
 @app.route('/',methods=["POST","GET"])
 def homePage():
-    jobs=Jobs()
-    jobs.renewMaturedBankDeposits()
-    # jobs.addNewSip()
     userAction = request.form.get("userAction")
     print("Checking Token Expiry ...")
     userSession = UserSession()
@@ -267,9 +264,9 @@ def newStockInvestment():
         stockInvestmentType=request.form.get("stockInvestmentType")
         investedDate=request.form.get("investedDate")
         if stockInvestmentType == "SIP":
-            sipAmount=request.form.get("sipAmount")
+            sipAmount=float(request.form.get("sipAmount"))
             sipDate = int(request.form.get("sipDate"))
-            sipDate = utility.getNextSipDate(sipDate=sipDate)
+            sipDate = utility.getNextSipDate(sipDate=sipDate,investedDate=investedDate)
             utility.addStockInvestment(userId=userId,stockName=stockName,investedDate=investedDate,
                                     sip=True,oneTime=False,sipAmount=sipAmount,sipDate=sipDate)
         else:
@@ -432,8 +429,9 @@ def newMutualFund():
         investedDate=request.form.get("investedDate")
         mutualFundInvestmentType=request.form.get("mutualFundInvestmentType")
         if mutualFundInvestmentType == "SIP":
-            sipDate = request.form.get("sipDate")
-            sipAmount=request.form.get("sipAmount")
+            sipDate = int(request.form.get("sipDate"))
+            sipDate = utility.getNextSipDate(sipDate=sipDate,investedDate=investedDate)
+            sipAmount=float(request.form.get("sipAmount"))
             utility.addMutualFundInvestment(userId=userId,schemeName="{}.{}".format(mutualFundName,mutualFundId),investedDate=investedDate,
                                             sip=True,oneTime=False,sipAmount=sipAmount,sipDate=sipDate)
         else:
@@ -559,7 +557,7 @@ def newBankDeposit():
         print("Valid Refresh Token for the user : {}".format(userId))
         userId=userSession.getUserId(token=is_access_token_valid)
         bankName=request.form.get("Bank").upper()
-        principalAmount = request.form.get("Amount")
+        principalAmount = float(request.form.get("Amount"))
         interestType = request.form.get("InterestType")
         invsetmentDate = request.form.get("InvestedDate")
         maturityYears=request.form.get("maturityYears")
@@ -568,6 +566,7 @@ def newBankDeposit():
         autoRenew=request.form.get("autoRenew",False)
 
         utility=UserBankInvestment()
+        invsetmentDate=utility.convertStrToDate(invsetmentDate)
         isValid,maturityDate=utility.isValidMaturityDate(maturityDate=[maturityDays,maturityMonths,maturityYears],startDate=invsetmentDate)
         if not isValid:
             flash(message="Invalid Maturity Date Submitted !! Kindly Resubmit.",category="error")
@@ -582,7 +581,6 @@ def newBankDeposit():
             print("simple-periodic",rateOfInterest,invsetmentDate,maturityDate)
             isValid,interestRateJson=utility.prepareInterestJson(interestRates=rateOfInterest,startDate=invsetmentDate,maturityDate=maturityDate,
                                                                  interestCalculateType=interestCalculateType,interestType=interestType)
-            print(interestRateJson)
         else:
             interestCalculateType = request.form.get("compoundInterestCalculateType")
             if interestCalculateType == "NONE":
@@ -601,14 +599,12 @@ def newBankDeposit():
                     flash(message="Invalid Compound Interest Submitted !! Kindly Resubmit.",category="error")
                     response = make_response(redirect(url_for('addBankDeposit')))
                     return response
-                print(interestRateJson)
             else:
                 rateOfInterest = request.form.get("compoundInterestRate")
                 print("compound-periodic",rateOfInterest,invsetmentDate,maturityDate)
                 isValid,interestRateJson=utility.prepareInterestJson(interestRates=rateOfInterest,startDate=invsetmentDate,maturityDate=maturityDate,
                                                                      interestCalculateType=interestCalculateType,interestType=interestType)
-                print(interestRateJson)
-
+        print("interestRateJson is : {} and its type is {}".format(interestRateJson,type(interestRateJson)))
         utility.addNewBankDeposit(userId=userId,bank=bankName,amount=principalAmount,interest=interestRateJson,interestCalculateType=interestCalculateType,
                                   investmentDate=invsetmentDate,maturityDate=maturityDate,interestType=interestType,autoRenew=autoRenew)
         deposits=utility.getAllBankInvestments()
@@ -636,7 +632,7 @@ def markInvestmentInactive():
 if __name__ == '__main__':
     jobs=Jobs()
     scheduler=BackgroundScheduler()
-    autoRenewJob=scheduler.add_job(jobs.renewMaturedBankDeposits,'cron',hour=0,minute=0)
-    addSipJob=scheduler.add_job(jobs.addNewSip,'cron',hour=0,minute=0)
+    autoRenewJob=scheduler.add_job(jobs.renewMaturedBankDeposits,'cron',hour=0,minute=5)
+    addSipJob=scheduler.add_job(jobs.addNewSip,'cron',hour=0,minute=5)
     scheduler.start()
     app.run(debug=True)

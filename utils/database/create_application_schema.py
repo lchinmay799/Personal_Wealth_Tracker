@@ -200,7 +200,7 @@ if __name__ == '__main__':
     
     database.createTable(schema=database.databaseConfig["application_schema"],
                          table="BANK_DEPOSITS",
-                         columns={"Id":"SERIAL","BankName":"VARCHAR(50)","Amount":"BIGINT NOT NULL","InterestRate":"JSONB NOT NULL","InvestedDate":"TIMESTAMP NOT NULL","InterestType":"VARCHAR(10) DEFAULT 'COMPOUND'","MaturityDate":"TIMESTAMP NOT NULL","InterestCalculateDuration":"INTEGER","AutoRenew":"BOOLEAN DEFAULT false","RenewalDate":"TIMESTAMP"},
+                         columns={"Id":"SERIAL","BankName":"VARCHAR(50)","Amount":"BIGINT NOT NULL","InterestRate":"JSONB NOT NULL","InvestedDate":"TIMESTAMP NOT NULL","InterestType":"VARCHAR(10) DEFAULT 'COMPOUND'","MaturityDate":"TIMESTAMP NOT NULL","InterestCalculateDuration":"INTEGER","AutoRenew":"BOOLEAN DEFAULT false","RenewalDate":"TIMESTAMP","RenewalAmount":"BIGINT"},
                          connection=connection)
     command = sql.SQL("ALTER TABLE {schema}.{table} ADD CONSTRAINT pk_BANK_DEPOSITS PRIMARY KEY ({column})").format(schema=sql.Identifier(database.databaseConfig["application_schema"]),
                                                                                                             table=sql.Identifier("BANK_DEPOSITS"),

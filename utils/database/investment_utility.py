@@ -17,6 +17,7 @@ class BankDeposits(Database):
         self.interestDurationColumn="InterestCalculateDuration"
         self.renewalDateColumn="RenewalDate"
         self.autoRenewColumn="AutoRenew"
+        self.renewalAmountColumn="RenewalAmount"
 
     def addNewDeposit(self,userId,bank,amount,interest,investmentDate,interestType,maturityDate,interestDuration=None,newInvestment=True,autoRenew=False):
         command=sql.SQL("INSERT INTO {schema}.{table} ({columns}) VALUES ({values}) RETURNING {return_column}").format(schema=sql.Identifier(self.schema),
@@ -28,7 +29,8 @@ class BankDeposits(Database):
                                                                                                                         sql.Identifier(self.interestTypeColumn),
                                                                                                                         sql.Identifier(self.maturityDateColumn),
                                                                                                                         sql.Identifier(self.interestDurationColumn),
-                                                                                                                        sql.Identifier(self.autoRenewColumn)]),
+                                                                                                                        sql.Identifier(self.autoRenewColumn),
+                                                                                                                        sql.Identifier(self.renewalAmountColumn)]),
                                                                                             values=sql.SQL(", ").join([sql.Literal(bank),
                                                                                                                        sql.Literal(amount),
                                                                                                                        sql.Literal(interest),
@@ -36,7 +38,8 @@ class BankDeposits(Database):
                                                                                                                        sql.Literal(interestType),
                                                                                                                        sql.Literal(maturityDate),
                                                                                                                        sql.Literal(interestDuration),
-                                                                                                                       sql.Literal(autoRenew)]),
+                                                                                                                       sql.Literal(autoRenew),
+                                                                                                                       sql.Literal(amount)]),
                                                                                             return_column=sql.Identifier(self.idColumn))
         
         with self.connect() as connection:
@@ -46,7 +49,7 @@ class BankDeposits(Database):
                 response=response.fetchone()
                 newBankDepositId= response.get(self.idColumn,False) if response else False
                 if newInvestment:
-                    return self.addNewInvestment(userId=userId,investmentType=self.investmentType,bankDepositId=newBankDepositId)
+                    self.addNewInvestment(userId=userId,investmentType=self.investmentType,bankDepositId=newBankDepositId)
                 return newBankDepositId
     
     def getUserBankInvestments(self,userId):
@@ -56,6 +59,8 @@ class BankDeposits(Database):
                                                                              self.interestTypeColumn,
                                                                              self.investedDateColumn,
                                                                              self.maturityDateColumn,
+                                                                             self.renewalAmountColumn,
+                                                                             self.renewalDateColumn,
                                                                              "Active",
                                                                              "WithdrawalDate"]))
         returnColumns.append(sql.Composed(sql.Identifier(self.schema)+sql.SQL(".")+
@@ -81,6 +86,8 @@ class BankDeposits(Database):
                                                                              self.interestTypeColumn,
                                                                              self.investedDateColumn,
                                                                              self.maturityDateColumn,
+                                                                             self.renewalAmountColumn,
+                                                                             self.renewalDateColumn,
                                                                              "Active",
                                                                              "WithdrawalDate"]))
         returnColumns.extend([sql.Composed(sql.Identifier(self.schema)+
@@ -106,24 +113,30 @@ class BankDeposits(Database):
                 return response.fetchall()
     
     def getMaturingBankDepositsWithAutoRenew(self,maturityDate):
-        command=sql.SQL("""SELECT {columns} FROM {schema}.{table} WHERE {autoRenew}=%s AND {maturityDate}=%s""").format(schema=sql.Identifier(self.schema),
+        command=sql.SQL("""SELECT {columns} FROM {schema}.{table} JOIN {schema}.{investmentsTable} ON {schema}.{table}.{id}={schema}.{investmentsTable}.{bankDepositId}
+                        WHERE {autoRenew}=%s AND {maturityDate}=%s AND {active}=%s""").format(schema=sql.Identifier(self.schema),
                                                                                                   table=sql.Identifier(self.table),
                                                                                                   columns=sql.SQL(", ").join(list(map(lambda column:sql.Identifier(column),
-                                                                                                                                      [self.idColumn,
-                                                                                                                                        self.renewalDateColumn,
-                                                                                                                                        self.interestRateColumn,
-                                                                                                                                        self.maturityDateColumn,
-                                                                                                                                        self.interestTypeColumn,
-                                                                                                                                        self.investedDateColumn,
-                                                                                                                                        self.interestDurationColumn]))),
+                                                                                                                                [self.idColumn,
+                                                                                                                                self.renewalDateColumn,
+                                                                                                                                self.interestRateColumn,
+                                                                                                                                self.maturityDateColumn,
+                                                                                                                                self.interestTypeColumn,
+                                                                                                                                self.investedDateColumn,
+                                                                                                                                self.interestDurationColumn]))),
+                                                                                                  id=sql.Identifier(self.idColumn),
+                                                                                                  investmentsTable=sql.Identifier("INVESTMENTS"),
+                                                                                                  bankDepositId=sql.Identifier("BankDepositId"),
                                                                                                   maturityDate=sql.Identifier("MaturityDate"),
-                                                                                                  autoRenew=sql.Identifier("AutoRenew"))
+                                                                                                  autoRenew=sql.Identifier("AutoRenew"),
+                                                                                                  active=sql.Identifier("Active"))
         with self.connect() as connection:
             with connection.cursor(cursor_factory=RealDictCursor) as cursor:
-                response=self.executeCommand(command=command,cursor=cursor,argument=[True,maturityDate])
+                response=self.executeCommand(command=command,cursor=cursor,argument=[True,maturityDate,True])
                 return response.fetchall()
-        
+
     def updateBankDeposit(self,columns,values,bankDepositId):
+        print("bankDepositId is ",bankDepositId)
         updateColumns=[sql.SQL("{column} = {value}").format(column=sql.Identifier(column),
                                                             value=sql.Literal(value)) for column,value in zip(columns,values)]
         command=sql.SQL("""UPDATE {schema}.{table} SET {updateColumns} WHERE {id} = %s""").format(schema=sql.Identifier(self.schema),
@@ -133,6 +146,7 @@ class BankDeposits(Database):
         with self.connect() as connection:
             with connection.cursor(cursor_factory=RealDictCursor) as cursor:
                 self.executeCommand(command=command,cursor=cursor,argument=[bankDepositId])
+                connection.commit()
 
     def getAllBankDeposits(self):
         command = sql.SQL("SELECT * FROM {schema}.{table}").format(schema=sql.Identifier(self.schema),
@@ -175,12 +189,14 @@ class Stock(Database):
                 response = self.executeCommand(command=command,cursor=cursor)
                 connection.commit()
                 response=response.fetchone()
+                sipId=None
                 newStockId= response.get(self.idColumn,False) if response else False
                 if sip:
-                    self.addNewSip(sipAmount=sipAmount,sipDate=sipDate,stockId=newStockId)
+                    sipId=self.addNewSip(sipAmount=sipAmount,sipDate=sipDate,stockId=newStockId)
                 elif oneTime:
                     self.addNewInvestmentDetail(amount=oneTimeInvestmentAmount,units=units,investedDate=investedDate,stockId=newStockId)
-                return self.addNewInvestment(userId=userId,investmentType=self.investmentType,stockId=newStockId)
+                self.addNewInvestment(userId=userId,investmentType=self.investmentType,stockId=newStockId)
+                return newStockId,sipId
 
     def getUserStocks(self,userId):
         returnColumns = list(map(lambda columnName:sql.Identifier(columnName),[self.stockNameColumn,"Active","WithdrawalDate"]))
@@ -268,6 +284,7 @@ class Stock(Database):
         with self.connect() as connection:
             with connection.cursor(cursor_factory=RealDictCursor) as cursor:
                 self.executeCommand(command=command,cursor=cursor,argument=[investmentId])
+                connection.commit()
 
     def getStockUnits(self,investmentId):
         command=sql.SQL("""SELECT COALESCE({units},0) AS {units} FROM  {schema}.{table} JOIN {schema}.{investmentTable} ON {schema}.{table}.{id}={schema}.{investmentTable}.{stockId}
@@ -323,12 +340,14 @@ class MutualFund(Database):
                 response = self.executeCommand(command=command,cursor=cursor)
                 connection.commit()
                 response=response.fetchone()
+                sipId=None
                 newMutualFundId= response.get(self.idColumn,False) if response else False
                 if sip:
-                    self.addNewSip(sipAmount=sipAmount,sipDate=sipDate,mutualFundId=newMutualFundId)
+                    sipId=self.addNewSip(sipAmount=sipAmount,sipDate=sipDate,mutualFundId=newMutualFundId)
                 elif oneTime:
                     self.addNewInvestmentDetail(amount=oneTimeInvestmentAmount,units=units,investedDate=investedDate,mutualFundId=newMutualFundId)
-                return self.addNewInvestment(userId=userId,investmentType=self.investmentType,mutualFundId=newMutualFundId)
+                self.addNewInvestment(userId=userId,investmentType=self.investmentType,mutualFundId=newMutualFundId)
+                return newMutualFundId,sipId
 
     def getUserMutualFunds(self,userId):
         returnColumns=list(map(lambda columnName:sql.Identifier(columnName),[self.schemeColumn,"Active","WithdrawalDate"]))

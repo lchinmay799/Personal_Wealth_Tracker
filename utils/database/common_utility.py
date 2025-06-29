@@ -36,7 +36,7 @@ class Database:
             return None
         
     def executeCommand(self,command,cursor,argument=None):
-        print("Executing the command : {}".format(command.as_string(cursor)))
+        print("Executing the command : {} with argument {}".format(command.as_string(cursor),argument))
         if argument:
             cursor.execute(command,argument)
         else:
@@ -157,6 +157,7 @@ class Database:
         with self.connect() as connection:
             with connection.cursor(cursor_factory=RealDictCursor) as cursor:
                 self.executeCommand(command=command,cursor=cursor,argument=argument)
+                connection.commit()
 
     def getInvestmentType(self,investmentId):
         command=sql.SQL("SELECT {investmentType} FROM {schema}.{table} WHERE {investmentId}=%s").format(schema=sql.Identifier(self.schema),
@@ -179,3 +180,27 @@ class Database:
             with connection.cursor(cursor_factory=RealDictCursor) as cursor:
                 response=self.executeCommand(command=command,cursor=cursor,argument=[sipDate])
                 return response.fetchall()
+            
+    def getInvestmentStatus(self,stockId=None,mutualFundId=None):
+        if stockId is not None:
+            argument=[stockId]
+            command="""SELECT {active} FROM {schema}.{investmentsTable} JOIN {schema}.{stocks} ON {schema}.{stocks}.{id}={schema}.{investmentsTable}.{stockId}
+            WHERE {schema}.{stocks}.{id}=%s""".format(schema=sql.Identifier(self.schema),
+                                                    active=sql.Identifier("Active"),
+                                                    stocks=sql.Identifier("STOCKS"),
+                                                    investmentsTable=sql.Identifier("INVESTMENTS"),
+                                                    id=sql.Identifier("Id"),
+                                                    stockId=sql.Identifier("StockId"))
+        elif mutualFundId is not None:
+            argument=[mutualFundId]
+            command="""SELECT {active} FROM {schema}.{investmentsTable} JOIN {schema}.{mutualFunds} ON {schema}.{mutualFunds}.{id}={schema}.{investmentsTable}.{mutualFundId}
+            WHERE {schema}.{mutualFunds}.{id}=%s""".format(schema=sql.Identifier(self.schema),
+                                                    active=sql.Identifier("Active"),
+                                                    mutualFunds=sql.Identifier("MUTUAL_FUNDS"),
+                                                    investmentsTable=sql.Identifier("INVESTMENTS"),
+                                                    id=sql.Identifier("Id"),
+                                                    mutualFundId=sql.Identifier("MutualFundId"))
+        with self.connect() as connection:
+            with connection.cursor(cursor_factory=RealDictCursor) as cursor:
+                response = self.executeCommand(command=command,argument=argument,cursor=cursor)
+                return response.fetchone()

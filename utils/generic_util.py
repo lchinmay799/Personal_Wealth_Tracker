@@ -199,9 +199,9 @@ class Utility:
     def today(self):
         return datetime.today()
     
-    def getNextSipDate(self,sipDate):
-        today=self.today()
-        day,month,year=today.day,today.month,today.year
+    def getNextSipDate(self,sipDate,investedDate):
+        investedDate=self.convertStrToDate(investedDate)
+        day,month,year=investedDate.day,investedDate.month,investedDate.year
         nextSipDate="{}-{}-{}".format(year,month,sipDate)
         nextSipDate=self.convertStrToDate(date=nextSipDate)
         nextSipDate=nextSipDate+relativedelta(months=1)
@@ -251,7 +251,7 @@ class UserBankInvestment(Utility):
 
                 for i in range(len(interestRates)):
                     interestStartDate=startDate+relativedelta(days=startDays[i],months=startMonths[i],years=startYears[i])
-                    if interestStartDate<maturityDate:
+                    if interestStartDate<=maturityDate:
                         rateOfInterest[i]={
                             "startDate":interestStartDate,
                             "endDate":min(maturityDate,startDate+relativedelta(days=endDays[i],months=endMonths[i],years=endYears[i])),
@@ -280,25 +280,65 @@ class UserBankInvestment(Utility):
         return isValid,None
     
     def addNewBankDeposit(self,userId,bank,amount,interest,investmentDate,maturityDate,interestCalculateType=None,interestType='COMPOUND',autoRenew=None):
-        self.bankInvestment.addNewDeposit(userId=userId,bank=bank,amount=amount,interest=interest,investmentDate=investmentDate,autoRenew=autoRenew,
+        bankDepositId=self.bankInvestment.addNewDeposit(userId=userId,bank=bank,amount=amount,interest=interest,investmentDate=investmentDate,autoRenew=autoRenew,
                                   interestType=interestType,maturityDate=maturityDate,interestDuration=self.interestTypeConverter.get(interestCalculateType))
+        today=self.today()
+        renewalDate=investmentDate
+        interestRateJson=interest
+        amountAfterRenewal=amount
+        while maturityDate<today:
+            interestRateJson=json.loads(interestRateJson)
+            if interestType == "SIMPLE" or (interestType == "COMPOUND" and self.interestTypeConverter.get(interestCalculateType) is not None):
+                renewalDate,maturityDate=maturityDate,maturityDate+relativedelta(days=(maturityDate-renewalDate).days)
+                amountAfterRenewal+=round(amountAfterRenewal*(maturityDate-renewalDate).days*float(interestRateJson.get("0").get("interestRate"))/36500)
+                isValid,interestRateJson=self.prepareInterestJson(interestRates=float(interestRateJson.get("0").get("interestRate")),
+                                                startDate=renewalDate,
+                                                maturityDate=maturityDate,
+                                                interestCalculateType=interestCalculateType,
+                                                interestType=interestType)
+            else:
+                for i,interestRate in interestRateJson.items():
+                    interestRate["startDate"]=self.convertStrToDate(interestRate.get("startDate"))
+                    interestRate["endDate"]=self.convertStrToDate(interestRate.get("endDate"))
+                    startDate=interestRate.get("startDate")
+                    endDate=interestRate.get("endDate")
+                    interestRateJson[i]={
+                        "startDate":startDate+relativedelta(days=(maturityDate-renewalDate).days),
+                        "endDate":endDate+relativedelta(days=(maturityDate-renewalDate).days),
+                        "interestRate":interestRate.get("interestRate")
+                    }
+                amountAfterRenewal+=round(amountAfterRenewal*(maturityDate-renewalDate).days*float(interestRateJson.get(i).get("interestRate"))/36500)
+                renewalDate,maturityDate=maturityDate,maturityDate+relativedelta(days=(maturityDate-renewalDate).days)
+                isValid=self.isValidInterestDurationRange(rateOfInterest=interestRateJson)
+                interestRateJson=json.dumps(interestRateJson,indent=4)
+
+        if isValid:
+            self.updateBankDeposit(bankDepositId=bankDepositId,
+                                                    columns=["InterestRate","RenewalDate","MaturityDate","RenewalAmount"],
+                                                    values=[interestRateJson,renewalDate,maturityDate,amountAfterRenewal])
         
     def getAllBankInvestments(self):
         return self.bankInvestment.getAllBankDeposits()
             
     def getCurrentAmount(self,deposit):
         if deposit.get("Active"):
-            currentDay=datetime.today()
+            currentDay=self.today()
         else:
             currentDay=self.convertStrToDate(deposit.get("WithdrawalDate"))
-        currentAmount=float(deposit.get("Amount"))
-        for interestRate in deposit.get("InterestRate").values():
-            if self.convertStrToDate(interestRate.get('endDate'))<=currentDay:
-                period=(self.convertStrToDate(interestRate.get('endDate'))-self.convertStrToDate(interestRate.get('startDate'))).days
-                if deposit.get('InterestType')=='SIMPLE':
-                    currentAmount+=(float(deposit.get('Amount'))*interestRate.get('interestRate')*period/36500)
-                if deposit.get('InterestType')=='COMPOUND':
+        interestCalculateDuration=deposit.get("InterestCalculateDuration")
+        currentAmount=float(deposit.get("RenewalAmount"))
+        for i,interestRate in deposit.get("InterestRate").items():
+            startDate,endDate=self.convertStrToDate(interestRate.get("startDate")),self.convertStrToDate(interestRate.get("endDate"))
+            if deposit.get('InterestType')=='SIMPLE' or (deposit.get('InterestType')=='COMPOUND' and interestCalculateDuration is not None):
+                if currentDay<=endDate:
+                    endDate=currentDay
+                period=(endDate-startDate).days
+                currentAmount+=(currentAmount*interestRate.get('interestRate')*period/36500)
+            elif interestCalculateDuration is None:
+                if currentDay>=startDate and currentDay<=endDate:
+                    period=(currentDay-self.convertStrToDate(deposit.get("RenewalDate"))).days
                     currentAmount+=(currentAmount*interestRate.get('interestRate')*period/36500)
+                    break
         return round(currentAmount,2)
 
     def getUserCombinedBankDepositAmount(self,userId):
@@ -373,9 +413,18 @@ class UserStockInvestment(Utility):
     def addStockInvestment(self,userId,stockName,investedDate,sip=False,oneTime=False,vestingDetails=None,
                               sipAmount=None,units=None,sipDate=None,
                               oneTimeInvestmentAmount=None):
-        self.stockInvestment.addNewStockInvestment(userId=userId,stockName=stockName,investedDate=investedDate,
+        stockId,sipId=self.stockInvestment.addNewStockInvestment(userId=userId,stockName=stockName,investedDate=investedDate,
                                                    sip=sip,sipAmount=sipAmount,sipDate=sipDate,units=units,
                                                    oneTime=oneTime,vestingDetails=vestingDetails,oneTimeInvestmentAmount=oneTimeInvestmentAmount)
+        if sip:
+            today=self.today()
+            isValid,stockInfo=self.searchStockInfo(stockName=stockName,period="daily",outputSize="full")
+            if isValid:
+                while sipDate < today:
+                    units=round(sipAmount/self.getStockAmountOnDate(stockInfo=stockInfo,
+                                                               date=sipDate),2)
+                    self.stockInvestment.addNewInvestmentDetail(amount=sipAmount,units=units,investedDate=sipDate,stockId=stockId,sipId=sipId)
+                    sipDate=sipDate+relativedelta(months=1)
 
     def getStockAmountOnDate(self,stockInfo,date):
         date=self.convertStrToDate(date=date)
@@ -514,6 +563,9 @@ class UserStockInvestment(Utility):
     def getStockUnits(self,investmentId):
         stockUnits= self.stockInvestment.getStockUnits(investmentId=investmentId)
         return int(stockUnits.get("Units"))
+    
+    def getInvestmentStatus(self,stockId=None,mutualFundId=None):
+        return self.stockInvestment.getInvestmentStatus(stockId=stockId,mutualFundId=mutualFundId)
 
 class UserMutualFundInvestment(Utility):
     def __init__(self):
@@ -542,9 +594,19 @@ class UserMutualFundInvestment(Utility):
     def addMutualFundInvestment(self,userId,schemeName,investedDate,sip=False,oneTime=False,
                                 sipAmount=None,sipDate=None,
                                 oneTimeInvestmentAmount=None,units=None):
-        self.mutualFund.addNewMutualFundInvestment(userId=userId,scheme=schemeName,investedDate=investedDate,
+        mutualFundId,sipId=self.mutualFund.addNewMutualFundInvestment(userId=userId,scheme=schemeName,investedDate=investedDate,
                                                    sip=sip,oneTime=oneTime,sipAmount=sipAmount,sipDate=sipDate,
                                                    units=units,oneTimeInvestmentAmount=oneTimeInvestmentAmount)
+        if sip:
+            today=self.today()
+            schemeName,schemeId=schemeName.split(".")
+            isValid,mutualFundInfo=self.searchMutualFund(schemeId=schemeId)
+            if isValid:
+                while sipDate <= today:
+                    units=round(sipAmount/self.getMutualFundNavOnDate(mutualFundData=mutualFundInfo,
+                                                                        date=sipDate),2)
+                    self.mutualFund.addNewInvestmentDetail(amount=sipAmount,units=units,mutualFundId=mutualFundId,sipId=sipId,investedDate=sipDate)
+                    sipDate=sipDate+relativedelta(months=1)
 
     def getMutualFundNavOnDate(self,mutualFundData,date):
         date=self.convertStrToDate(date=date)
@@ -639,7 +701,7 @@ class UserMutualFundInvestment(Utility):
         for mutualFund in mutualFunds:
             schemeName,schemeId=mutualFund["Scheme"].split(".")
             mutualFund["Scheme"]=schemeName
-            combinedMutualFund[schemeName]=float(combinedMutualFund.get(schemeName,0)+mutualFund["Amount"])
+            combinedMutualFund[schemeName]=float(combinedMutualFund.get(schemeName,0)+float(mutualFund["Amount"]))
         return mutualFunds,list(map(lambda mutualFund:[mutualFund,combinedMutualFund[mutualFund]],combinedMutualFund))
 
     def getMutualFund(self,investmentId):

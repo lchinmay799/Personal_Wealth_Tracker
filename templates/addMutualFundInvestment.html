@@ -43,7 +43,7 @@
             <input type="radio" name = "mutualFundInvestmentType" value="One Time" id = "oneTimeMutualFund" required onclick="isSip(false)"><label for="oneTimeMutualFund" class = "mutualFundInvestmentType">ONE TIME</label><br>
             <div id="sipInvestmentContainer">
                 <input type="number" id="sipAmount" name="sipAmount" placeholder="Enter the SIP Amount" step="1" min="0" required class="sipInfoField"><p class="commonString currency" style="color: white;">$</p><br>
-                <label for = "sipDate" class="calendarLabel" style="color: white;">SIP Date</label><input type="date" name = "sipDate"  id ="sipDate" class="sipInfoField" required>
+                <label for = "sipDate" class="calendarLabel" style="color: white;">SIP Date</label><input type="number" name = "sipDate"  id ="sipDate" class="sipInfoField" min="1" max="31" required><label for = "sipDate" class="calendarLabel" style="color: white;">of Every Month</label>
             </div>
             <div id="oneTimeInvestmentContainer">
                 <input type="number" id="mutualFundAmount" name="mutualFundAmount" placeholder="Enter the Amount" step="1" min="0" required class="oteInfoField"><br>
