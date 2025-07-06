@@ -204,7 +204,8 @@ class Utility:
         day,month,year=investedDate.day,investedDate.month,investedDate.year
         nextSipDate="{}-{}-{}".format(year,month,sipDate)
         nextSipDate=self.convertStrToDate(date=nextSipDate)
-        nextSipDate=nextSipDate+relativedelta(months=1)
+        if nextSipDate > self.today():
+            nextSipDate=nextSipDate+relativedelta(months=1)
         return nextSipDate
 class UserBankInvestment(Utility):
     def __init__(self):

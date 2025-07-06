@@ -43,7 +43,6 @@ class Jobs:
             else:
                 interestRateJson=deposit.get("InterestRate")
                 for i,interestRate in interestRateJson.items():
-                    i=int(i)
                     interestRate["startDate"]=self.bankDepositUtility.convertStrToDate(interestRate.get("startDate"))
                     interestRate["endDate"]=self.bankDepositUtility.convertStrToDate(interestRate.get("endDate"))
                     startDate=interestRate.get("startDate")
@@ -64,14 +63,12 @@ class Jobs:
                                                         values=[interestRateJson,renewalDate,maturityDate,amountAfterRenewal])
                 
     def addNewSip(self):
-        sipDate=self.stockUtility.today()-relativedelta(days=1)
+        sipDate=self.stockUtility.today()
         sips=self.stockUtility.getSIPToday(sipDate)
-
         print("SIPS: ",sips)
-
         for sip in sips:
             sipAmount=sip.get("SIPAmount")
-            nextSipDate=self.stockUtility.getNextSipDate(sipDate=sipDate.day)
+            nextSipDate=self.stockUtility.getNextSipDate(sipDate=sipDate.day,investedDate=self.stockUtility.today())
             if sip.get("StockId") is not None:
                 if self.stockUtility.getInvestmentStatus(stockId=int(sip.get("StockId"))).get("Active"):
                     stockName=self.stockUtility.getStockName(stockId=int(sip.get("StockId")))

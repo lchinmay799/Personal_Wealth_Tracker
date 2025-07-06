@@ -184,8 +184,8 @@ class Database:
     def getInvestmentStatus(self,stockId=None,mutualFundId=None):
         if stockId is not None:
             argument=[stockId]
-            command="""SELECT {active} FROM {schema}.{investmentsTable} JOIN {schema}.{stocks} ON {schema}.{stocks}.{id}={schema}.{investmentsTable}.{stockId}
-            WHERE {schema}.{stocks}.{id}=%s""".format(schema=sql.Identifier(self.schema),
+            command=sql.SQL("""SELECT {active} FROM {schema}.{investmentsTable} JOIN {schema}.{stocks} ON {schema}.{stocks}.{id}={schema}.{investmentsTable}.{stockId}
+            WHERE {schema}.{stocks}.{id}=%s""").format(schema=sql.Identifier(self.schema),
                                                     active=sql.Identifier("Active"),
                                                     stocks=sql.Identifier("STOCKS"),
                                                     investmentsTable=sql.Identifier("INVESTMENTS"),
@@ -193,8 +193,8 @@ class Database:
                                                     stockId=sql.Identifier("StockId"))
         elif mutualFundId is not None:
             argument=[mutualFundId]
-            command="""SELECT {active} FROM {schema}.{investmentsTable} JOIN {schema}.{mutualFunds} ON {schema}.{mutualFunds}.{id}={schema}.{investmentsTable}.{mutualFundId}
-            WHERE {schema}.{mutualFunds}.{id}=%s""".format(schema=sql.Identifier(self.schema),
+            command=sql.SQL("""SELECT {active} FROM {schema}.{investmentsTable} JOIN {schema}.{mutualFunds} ON {schema}.{mutualFunds}.{id}={schema}.{investmentsTable}.{mutualFundId}
+            WHERE {schema}.{mutualFunds}.{id}=%s""").format(schema=sql.Identifier(self.schema),
                                                     active=sql.Identifier("Active"),
                                                     mutualFunds=sql.Identifier("MUTUAL_FUNDS"),
                                                     investmentsTable=sql.Identifier("INVESTMENTS"),

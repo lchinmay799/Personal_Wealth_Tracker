@@ -113,17 +113,23 @@ class BankDeposits(Database):
                 return response.fetchall()
     
     def getMaturingBankDepositsWithAutoRenew(self,maturityDate):
+        columns=[sql.SQL("{schema}.{table}.{id} as {id}").format(schema=sql.Identifier(self.schema),
+                                                                 table=sql.Identifier(self.table),
+                                                                 id=sql.Identifier(self.idColumn))]
+        columns.extend(list(map(lambda column:sql.Identifier(column),
+                                                                [self.renewalDateColumn,
+                                                                self.interestRateColumn,
+                                                                self.maturityDateColumn,
+                                                                self.interestTypeColumn,
+                                                                self.investedDateColumn,
+                                                                self.interestDurationColumn,
+                                                                self.renewalAmountColumn,
+                                                                self.renewalDateColumn])))
+        columns=sql.SQL(", ").join(columns)
         command=sql.SQL("""SELECT {columns} FROM {schema}.{table} JOIN {schema}.{investmentsTable} ON {schema}.{table}.{id}={schema}.{investmentsTable}.{bankDepositId}
                         WHERE {autoRenew}=%s AND {maturityDate}=%s AND {active}=%s""").format(schema=sql.Identifier(self.schema),
                                                                                                   table=sql.Identifier(self.table),
-                                                                                                  columns=sql.SQL(", ").join(list(map(lambda column:sql.Identifier(column),
-                                                                                                                                [self.idColumn,
-                                                                                                                                self.renewalDateColumn,
-                                                                                                                                self.interestRateColumn,
-                                                                                                                                self.maturityDateColumn,
-                                                                                                                                self.interestTypeColumn,
-                                                                                                                                self.investedDateColumn,
-                                                                                                                                self.interestDurationColumn]))),
+                                                                                                  columns=columns,
                                                                                                   id=sql.Identifier(self.idColumn),
                                                                                                   investmentsTable=sql.Identifier("INVESTMENTS"),
                                                                                                   bankDepositId=sql.Identifier("BankDepositId"),
