@@ -635,4 +635,4 @@ if __name__ == '__main__':
     autoRenewJob=scheduler.add_job(jobs.renewMaturedBankDeposits,'cron',hour=0,minute=5)
     addSipJob=scheduler.add_job(jobs.addNewSip,'cron',hour=9,minute=35)
     scheduler.start()
-    app.run(debug=True)
+    app.run(debug=True,host='0.0.0.0',port=5000)

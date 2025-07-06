@@ -8,27 +8,27 @@ class Database:
         with open('utils/config.json') as f:
             config=json.load(f)
             databaseConfig = config["personal_wealth_tracker"]["database"]
-            self.host = databaseConfig["localhost"]
+            # self.host = databaseConfig["localhost"]
             self.port = databaseConfig["port"]
             self.database = databaseConfig["application_database"]
-            self.user = databaseConfig["local_username"]
-            # self.host = databaseConfig["host"]
-            # self.user = databaseConfig["application_username"]
-            # self.password = databaseConfig["application_password"]
-            self.password=databaseConfig["default_password"]
+            # self.user = databaseConfig["local_username"]
+            self.host = databaseConfig["host"]
+            self.user = databaseConfig["application_username"]
+            self.password = databaseConfig["application_password"]
+            # self.password=databaseConfig["default_password"]
             self.schema = databaseConfig["application_schema"]
 
     def connect(self):
         try:
-            # connection =psycopg2.connect(database=self.database,
-            #                 user=self.user,
-            #                 password=self.password,
-            #                 host=self.host,
-            #                 port=self.port)
             connection =psycopg2.connect(database=self.database,
                             user=self.user,
                             password=self.password,
-                            host=self.host)
+                            host=self.host,
+                            port=self.port)
+            # connection =psycopg2.connect(database=self.database,
+            #                 user=self.user,
+            #                 password=self.password,
+            #                 host=self.host)
             print("Successfully established new connection to the Database : {}\n with User : {}\n Password : {}\n Hosted on {} using the Port {}".format(self.database,self.user,self.password,self.host,self.port))
             return connection
         except Exception as e:
