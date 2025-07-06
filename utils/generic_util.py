@@ -313,8 +313,7 @@ class UserBankInvestment(Utility):
                 isValid=self.isValidInterestDurationRange(rateOfInterest=interestRateJson)
                 interestRateJson=json.dumps(interestRateJson,indent=4)
 
-        if isValid:
-            self.updateBankDeposit(bankDepositId=bankDepositId,
+        self.updateBankDeposit(bankDepositId=bankDepositId,
                                                     columns=["InterestRate","RenewalDate","MaturityDate","RenewalAmount"],
                                                     values=[interestRateJson,renewalDate,maturityDate,amountAfterRenewal])
         
