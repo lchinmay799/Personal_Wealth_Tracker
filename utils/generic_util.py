@@ -728,7 +728,7 @@ class UserInvestments(Utility):
                                       mutualFundInvestment=mutualFundInvestments)
     
     def markInvestmentAsInactive(self,investmentId):
-        self.investments.markInvestmentInactive(investmentId=investmentId,withdrawalDate=datetime.today())
+        self.investments.markInvestmentInactive(investmentId=investmentId,withdrawalDate=self.today())
 
     def updateSIP(self,updateInfo,investmentId,investmentType):
         investmentTypes={

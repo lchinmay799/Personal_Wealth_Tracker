@@ -116,7 +116,7 @@ class Database:
                 return newOneTimeInvestmentId
             
     def markInvestmentInactive(self,investmentId,withdrawalDate):
-        command=sql.SQL("UPDATE {schema}.{table} SET {activeColumn}=%s AND {withdrawalDateColumn}=%s WHERE {investmentId}=%s").format(schema=sql.Identifier(self.schema),
+        command=sql.SQL("UPDATE {schema}.{table} SET {activeColumn}=%s, {withdrawalDateColumn}=%s WHERE {investmentId}=%s").format(schema=sql.Identifier(self.schema),
                                                                                                    table=sql.Identifier("INVESTMENTS"),
                                                                                                    investmentId=sql.Identifier("Id"),
                                                                                                    activeColumn=sql.Identifier("Active"),
