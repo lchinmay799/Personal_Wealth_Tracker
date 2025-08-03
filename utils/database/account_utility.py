@@ -20,7 +20,6 @@ class UserAccount(Database):
             with connection.cursor(cursor_factory=RealDictCursor) as cursor:
                 response = self.executeCommand(command=command,cursor=cursor,argument=[userEmail])
                 response=response.fetchone()
-                print("SQL response : ",response)
                 return response.get(returnValue) if response else False
     
     def createUser(self,userEmail,userName,userPassword):

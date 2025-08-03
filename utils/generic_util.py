@@ -9,10 +9,12 @@ from dateutil.relativedelta import relativedelta
 from utils.database.investment_utility import BankDeposits,Stock,MutualFund
 from utils.database.common_utility import Database
 from utils.request_util import APIRequest
+from utils.logger import logger
 
 class UserSession:
     def __init__(self):
-        pass
+        self.logger=logger()
+        self.logger=self.logger.getLogger()
 
     def formatUserId(self,userId):
         userId=hex(userId).replace("0x","").zfill(16)
@@ -28,11 +30,11 @@ class UserSession:
     def checkTokenExpiry(self):
         def checkRefreshTokenExpiry(refresh_token):
             try:
-                print("Refresh Token: ",refresh_token)
+                self.logger.info("Refresh Token: {}".format(refresh_token))
                 if refresh_token:
                     verify_jwt_in_request(optional=True,refresh=True)
                     identity = get_jwt_identity()
-                    print("Refresh Identity1: ",identity)
+                    self.logger.info("Refresh Identity1: {}".format(identity))
                     if identity is not None:
                         return False,refresh_token
                     else:
@@ -50,10 +52,10 @@ class UserSession:
             
             verify_jwt_in_request(optional=True,refresh=False)
             identity = get_jwt_identity()
-            print("Access Identity: ",identity)
+            self.logger.info("Access Identity: {}".format(identity))
             if identity:
-                print("Access Token: ",decode_token(access_token))
-                print("Refresh Token: ",decode_token(refresh_token))
+                self.logger.info("Access Token: {}".format(decode_token(access_token)))
+                self.logger.info("Refresh Token: {}".format(decode_token(refresh_token)))
                 return access_token,None
             else:
                 return checkRefreshTokenExpiry(refresh_token)
@@ -68,7 +70,7 @@ class UserSession:
     
     def createAccessToken(self,userName,userId,identity=None):
         if not identity:
-            print("username is {}".format(userName))
+            self.logger.info("username is {}".format(userName))
             identity=userName
         return create_access_token(identity=userName,additional_claims={"userID":self.formatUserId(userId=userId),"userName":userName})
     
@@ -78,15 +80,17 @@ class UserSession:
         return create_refresh_token(identity=identity,additional_claims={"userID":self.formatUserId(userId=userId),"userName":userName})
         
     def getClaimFromToken(self,token,key):
-        print("token: ",token)
+        self.logger.info("token: {}".format(token))
         token=token.encode('utf-8')
-        print("decoded ",decode_token(token))
-        print("key ",decode_token(token).get(key))
+        self.logger.info("decoded {}".format(decode_token(token)))
+        self.logger.info("key {}".format(decode_token(token).get(key)))
         return decode_token(token).get(key)
 
 class Utility:
     def __init__(self):
         super().__init__()
+        self.logger=logger()
+        self.logger=self.logger.getLogger()
         with open('utils/config.json') as f:
             config=json.load(f)
             self.currencyExchangeConfig = config["personal_wealth_tracker"]["currency_exchange"]
@@ -151,7 +155,7 @@ class Utility:
             else:
                 return None
         except Exception as e:
-            print("Failed to get currency exchange {}".format(e))
+            self.logger.info("Failed to get currency exchange {}".format(e))
             return None 
 
     def isValidVestingJson(self,stockUnits,vestingUnits):
@@ -209,6 +213,8 @@ class Utility:
         return nextSipDate
 class UserBankInvestment(Utility):
     def __init__(self):
+        self.logger=logger()
+        self.logger=self.logger.getLogger()
         self.interestTypeConverter={
             "MONTHLY":1,
             "QUARTERLY":3,
@@ -219,9 +225,9 @@ class UserBankInvestment(Utility):
     
     def isValidInterestDurationRange(self,rateOfInterest):
         interestRates=list(rateOfInterest.values())
-        print("interestRates: ",interestRates)
+        self.logger.info("interestRates: {}".format(interestRates))
         for i in range(len(interestRates)-1):
-            # print(interestRates[i+1]["startDate"],interestRates[i]["endDate"],(interestRates[i+1]["startDate"]-interestRates[i]["endDate"]).days)
+            # self.logger.info(interestRates[i+1]["startDate"],interestRates[i]["endDate"],(interestRates[i+1]["startDate"]-interestRates[i]["endDate"]).days)
             if (interestRates[i+1]["startDate"]-interestRates[i]["endDate"]).days!=1:
                 return False
             interestRates[i]["startDate"]=self.convertDateToStr(interestRates[i]["startDate"])
@@ -265,7 +271,7 @@ class UserBankInvestment(Utility):
         
         i=0
         while startDate<maturityDate:
-            print("interestCalculateType",interestCalculateType)
+            self.logger.info("interestCalculateType{}".format(interestCalculateType))
             endDate=startDate+relativedelta(months=self.interestTypeConverter.get(interestCalculateType))
             rateOfInterest[i]={
                 "startDate":startDate,
@@ -274,7 +280,7 @@ class UserBankInvestment(Utility):
             }
             i+=1
             startDate=endDate+relativedelta(days=1)
-        print("New Interest Rates: ",rateOfInterest)
+        self.logger.info("New Interest Rates: {}".format(rateOfInterest))
         isValid=self.isValidInterestDurationRange(rateOfInterest)      
         if isValid:
             return isValid,json.dumps(rateOfInterest,indent=4)
@@ -330,10 +336,10 @@ class UserBankInvestment(Utility):
         for i,interestRate in deposit.get("InterestRate").items():
             startDate,endDate=self.convertStrToDate(interestRate.get("startDate")),self.convertStrToDate(interestRate.get("endDate"))
             if deposit.get('InterestType')=='SIMPLE' or (deposit.get('InterestType')=='COMPOUND' and interestCalculateDuration is not None):
-                if currentDay<=endDate:
+                if currentDay>startDate and currentDay<=endDate:
                     endDate=currentDay
-                period=(endDate-startDate).days
-                currentAmount+=(currentAmount*interestRate.get('interestRate')*period/36500)
+                    period=(endDate-startDate).days
+                    currentAmount+=(currentAmount*interestRate.get('interestRate')*period/36500)
             elif interestCalculateDuration is None:
                 if currentDay>=startDate and currentDay<=endDate:
                     period=(currentDay-self.convertStrToDate(deposit.get("RenewalDate"))).days
@@ -355,7 +361,7 @@ class UserBankInvestment(Utility):
         for deposit in bankDeposits:
             deposits=self.combineDepositsFromInvestments(deposits=deposits,bankInvestment=deposit)
         deposits[bankInvestmentId]["CurrentAmount"]=self.getCurrentAmount(deposit=deposits[bankInvestmentId])
-        print("deposits: ",deposits)
+        self.logger.info("deposits: {}".format(deposits))
         # return bankDeposits,deposits[bankInvestmentId]
         return deposits[bankInvestmentId]
     
@@ -367,6 +373,8 @@ class UserBankInvestment(Utility):
 class UserStockInvestment(Utility):
     def __init__(self):
         super().__init__()
+        self.logger=logger()
+        self.logger=self.logger.getLogger()
         self.stockInvestment=Stock()
         with open('utils/config.json') as f:
             config=json.load(f)
@@ -433,7 +441,7 @@ class UserStockInvestment(Utility):
                 if self.convertStrToDate(key)<=date:
                     return float(stockInfo.get("Time Series (Daily)").get(key).get("4. close"))
         except Exception as e:
-            print("getting amount on in except {}",date,e)
+            self.logger.info("getting amount on in except {}".format(e))
             return float(random.randint(1,200))
             
     def formatStock(self,stockData,period="yearly"):
@@ -445,7 +453,7 @@ class UserStockInvestment(Utility):
         }
         openPrice,closePrice,volume,date=[],[],[],[]
         try:
-            print("formatting in try")
+            self.logger.info("formatting in try")
             entryCount = 0
             for key,value in stockData.get(period_map.get(period)).items():
                 if period == "monthly" and entryCount == 60:
@@ -459,7 +467,7 @@ class UserStockInvestment(Utility):
                 volume.insert(0,int(value.get("5. volume")))
                 entryCount+=1
         except Exception as e:
-            print("formatting in except",e)
+            self.logger.info("formatting in except {}".format(e))
             for i in range(6500):
                 if i%100==0:
                     date.append(datetime.today()-relativedelta(days=i))
@@ -534,7 +542,7 @@ class UserStockInvestment(Utility):
     
     def getStockInformation(self,stockId):
         stockInfo=self.stockInvestment.getStock(stockInvestmentId=stockId)
-        print("stockInfo: ",stockInfo)
+        self.logger.info("stockInfo: {}".format(stockInfo))
         # return list(map(lambda x: dict(x),stockInfo)),self.combineStockFromInvestments(stockInfo=stockInfo)
         return self.combineStockFromInvestments(stockInfo=stockInfo)
     
@@ -570,6 +578,8 @@ class UserStockInvestment(Utility):
 class UserMutualFundInvestment(Utility):
     def __init__(self):
         super().__init__()
+        self.logger=logger()
+        self.logger=self.logger.getLogger()
         self.mutualFund=MutualFund()
         with open('utils/config.json') as f:
             config=json.load(f)
@@ -588,7 +598,7 @@ class UserMutualFundInvestment(Utility):
                 else:
                     return True,mutualFundInfo
         except Exception as e:
-            print("Failed to get the Mutual Fund Info. {}".format(e))
+            self.logger.info("Failed to get the Mutual Fund Info. {}".format(e))
             return False,None
 
     def addMutualFundInvestment(self,userId,schemeName,investedDate,sip=False,oneTime=False,
@@ -602,7 +612,7 @@ class UserMutualFundInvestment(Utility):
             schemeName,schemeId=schemeName.split(".")
             isValid,mutualFundInfo=self.searchMutualFund(schemeId=schemeId)
             if isValid:
-                while sipDate <= today:
+                while sipDate < today:
                     units=round(sipAmount/self.getMutualFundNavOnDate(mutualFundData=mutualFundInfo,
                                                                         date=sipDate),2)
                     self.mutualFund.addNewInvestmentDetail(amount=sipAmount,units=units,mutualFundId=mutualFundId,sipId=sipId,investedDate=sipDate)
@@ -616,7 +626,7 @@ class UserMutualFundInvestment(Utility):
         return 0
     
     def formatMutualFund(self,mutualFundData,period="yearly"):
-        print("mutualFundData: ",mutualFundData)
+        self.logger.info("mutualFundData: {}".format(mutualFundData))
         data={}
         entryCount=0
         for nav in mutualFundData["data"]:
@@ -696,7 +706,7 @@ class UserMutualFundInvestment(Utility):
         
     def getUserMutualFunds(self,userId):
         mutualFunds= self.mutualFund.getUserMutualFunds(userId=userId)
-        print("mutualFunds: ",mutualFunds)
+        self.logger.info("mutualFunds: {}".format(mutualFunds))
         combinedMutualFund={}
         for mutualFund in mutualFunds:
             schemeName,schemeId=mutualFund["Scheme"].split(".")
@@ -706,7 +716,7 @@ class UserMutualFundInvestment(Utility):
 
     def getMutualFund(self,investmentId):
         mutualFundInfo = list(map(lambda mutualFund:dict(mutualFund),self.mutualFund.getMutualFund(investmentId=investmentId)))
-        print("mutualFundInfo: ",mutualFundInfo)
+        self.logger.info("mutualFundInfo: {}".format(mutualFundInfo))
         return self.combineMutualFundsFromInvestmentDetails(mutualFunds=mutualFundInfo)
     
     def getMutualFundName(self,mutualFundId):
@@ -714,6 +724,8 @@ class UserMutualFundInvestment(Utility):
 class UserInvestments(Utility):
     def __init__(self):
         super().__init__()
+        self.logger=logger()
+        self.logger=self.logger.getLogger()
         self.bankInvestment=UserBankInvestment()
         self.stockInvestment=UserStockInvestment()
         self.mutualFundInvestment=UserMutualFundInvestment()

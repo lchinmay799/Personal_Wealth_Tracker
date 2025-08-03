@@ -142,7 +142,6 @@ class BankDeposits(Database):
                 return response.fetchall()
 
     def updateBankDeposit(self,columns,values,bankDepositId):
-        print("bankDepositId is ",bankDepositId)
         updateColumns=[sql.SQL("{column} = {value}").format(column=sql.Identifier(column),
                                                             value=sql.Literal(value)) for column,value in zip(columns,values)]
         command=sql.SQL("""UPDATE {schema}.{table} SET {updateColumns} WHERE {id} = %s""").format(schema=sql.Identifier(self.schema),

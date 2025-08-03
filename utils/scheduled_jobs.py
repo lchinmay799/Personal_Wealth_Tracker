@@ -2,12 +2,15 @@ import logging
 import json
 from dateutil.relativedelta import relativedelta
 from utils.generic_util import UserBankInvestment,UserStockInvestment,UserMutualFundInvestment
+from utils.logger import logger
 
 class Jobs:
     def __init__(self):
         self.bankDepositUtility=UserBankInvestment()
         self.stockUtility=UserStockInvestment()
         self.mutualFundUtility=UserMutualFundInvestment()
+        self.logger=logger()
+        self.logger=self.logger.getLogger()
 
     def renewMaturedBankDeposits(self):
         maturityDate=self.bankDepositUtility.today()
@@ -18,7 +21,7 @@ class Jobs:
                 while nextToMaturityDay.day%32!=0:
                     maturingBankDeposits.extend(self.bankDepositUtility.getMaturingBankDepositsWithAutoRenew(maturityDate=nextToMaturityDay))
                     nextToMaturityDay=nextToMaturityDay+relativedelta(days=1)
-        print("Maturing deposits : ",maturingBankDeposits)
+        self.logger.info("Maturing deposits : {}".format(maturingBankDeposits))
         interestTypeConverter={
             1:"MONTHLY",
             3:"QUARTERLY",
@@ -65,7 +68,7 @@ class Jobs:
     def addNewSip(self):
         sipDate=self.stockUtility.today()
         sips=self.stockUtility.getSIPToday(sipDate)
-        print("SIPS: ",sips)
+        self.logger.info("SIPS: {}".format(sips))
         for sip in sips:
             sipAmount=sip.get("SIPAmount")
             nextSipDate=self.stockUtility.getNextSipDate(sipDate=sipDate.day,investedDate=self.stockUtility.today())

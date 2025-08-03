@@ -2,9 +2,12 @@ import psycopg2
 import json
 import psycopg2.sql as sql
 from psycopg2.extras import RealDictCursor
+from utils.logger import logger
 
 class Database:
     def __init__(self):
+        self.logger=logger()
+        self.logger=self.logger.getLogger()
         with open('utils/config.json') as f:
             config=json.load(f)
             databaseConfig = config["personal_wealth_tracker"]["database"]
@@ -29,19 +32,19 @@ class Database:
             #                 user=self.user,
             #                 password=self.password,
             #                 host=self.host)
-            print("Successfully established new connection to the Database : {}\n with User : {}\n Password : {}\n Hosted on {} using the Port {}".format(self.database,self.user,self.password,self.host,self.port))
+            self.logger.info("Successfully established new connection to the Database : {}\n with User : {}\n Password : {}\n Hosted on {} using the Port {}".format(self.database,self.user,self.password,self.host,self.port))
             return connection
         except Exception as e:
-            print("Failed to Connect to the Database : {}\n with User : {}\n Password : {}\n Hosted on {} using the Port {} \n Due to exception {}".format(self.database,self.user,self.password,self.host,self.port,e))
+            self.logger.info("Failed to Connect to the Database : {}\n with User : {}\n Password : {}\n Hosted on {} using the Port {} \n Due to exception {}".format(self.database,self.user,self.password,self.host,self.port,e))
             return None
         
     def executeCommand(self,command,cursor,argument=None):
-        print("Executing the command : {} with argument {}".format(command.as_string(cursor),argument))
+        self.logger.info("Executing the command : {} with argument {}".format(command.as_string(cursor),argument))
         if argument:
             cursor.execute(command,argument)
         else:
             cursor.execute(command)
-        print("Executed the command : {}".format(command.as_string(cursor)))
+        self.logger.info("Executed the command : {}".format(command.as_string(cursor)))
         return cursor
     
     def addNewInvestment(self,investmentType,userId,stockId=None,mutualFundId=None,bankDepositId=None,isActive=True):
