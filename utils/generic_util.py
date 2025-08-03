@@ -351,7 +351,8 @@ class UserBankInvestment(Utility):
         bankDeposits=self.bankInvestment.getUserBankInvestments(userId=userId)
         combinedDeposit={}
         for deposit in bankDeposits:
-            combinedDeposit[deposit["BankName"]]=combinedDeposit.get(deposit["BankName"],0)+self.getCurrentAmount(deposit=deposit)
+            if deposit.get("Active"):
+                combinedDeposit[deposit["BankName"]]=combinedDeposit.get(deposit["BankName"],0)+self.getCurrentAmount(deposit=deposit)
 
         return self.formatDeposits(bankDeposits),list(map(lambda deposit:[deposit,combinedDeposit[deposit]], combinedDeposit))
 
