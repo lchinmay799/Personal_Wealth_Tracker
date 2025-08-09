@@ -336,15 +336,15 @@ class UserBankInvestment(Utility):
         for i,interestRate in deposit.get("InterestRate").items():
             startDate,endDate=self.convertStrToDate(interestRate.get("startDate")),self.convertStrToDate(interestRate.get("endDate"))
             if deposit.get('InterestType')=='SIMPLE' or (deposit.get('InterestType')=='COMPOUND' and interestCalculateDuration is not None):
-                if currentDay>startDate and currentDay<=endDate:
-                    endDate=currentDay
-                    period=(endDate-startDate).days
-                    currentAmount+=(currentAmount*interestRate.get('interestRate')*period/36500)
+                # if currentDay>startDate and currentDay<=endDate:
+                endDate=currentDay
+                period=(endDate-startDate).days
+                currentAmount+=(currentAmount*interestRate.get('interestRate')*period/36500)
             elif interestCalculateDuration is None:
-                if currentDay>=startDate and currentDay<=endDate:
-                    period=(currentDay-self.convertStrToDate(deposit.get("RenewalDate"))).days
-                    currentAmount+=(currentAmount*interestRate.get('interestRate')*period/36500)
-                    break
+                # if currentDay>=startDate and currentDay<=endDate:
+                period=(currentDay-self.convertStrToDate(deposit.get("RenewalDate"))).days
+                currentAmount+=(currentAmount*interestRate.get('interestRate')*period/36500)
+                break
         return round(currentAmount,2)
 
     def getUserCombinedBankDepositAmount(self,userId):
@@ -434,6 +434,7 @@ class UserStockInvestment(Utility):
                                                                date=sipDate),2)
                     self.stockInvestment.addNewInvestmentDetail(amount=sipAmount,units=units,investedDate=sipDate,stockId=stockId,sipId=sipId)
                     sipDate=sipDate+relativedelta(months=1)
+            self.stockInvestment.updateSIP(columns=["SIPDate"],values=[sipDate],sipId=sipId)
 
     def getStockAmountOnDate(self,stockInfo,date):
         date=self.convertStrToDate(date=date)
@@ -530,15 +531,16 @@ class UserStockInvestment(Utility):
         individualAmount={}
         stockInfo =  list(map(lambda x: dict(x),self.stockInvestment.getUserStocks(userId=userId)))
         for stock in stockInfo:
-            stockName = stock.get("StockName")
-            stockExchange = stockName.split(".")[1] if "." in stockName else ""
-            valid,stockValue=self.searchStockInfo(stockName=stockName,period="daily")
-            stockAmount=self.getExchangeRate(amount=float(stock.get("Units"))*self.getStockAmountOnDate(stockInfo=stockValue,
-                                                                                                        date=datetime.today()),
-                                             targetConversion="INR",
-                                             stockExchange=stockExchange)
-            stock["Amount"]="₹ {}".format(stockAmount)
-            individualAmount[stockName]=individualAmount.get(stockName,0)+stockAmount
+            if stock.get("Active"):
+                stockName = stock.get("StockName")
+                stockExchange = stockName.split(".")[1] if "." in stockName else ""
+                valid,stockValue=self.searchStockInfo(stockName=stockName,period="daily")
+                stockAmount=self.getExchangeRate(amount=float(stock.get("Units"))*self.getStockAmountOnDate(stockInfo=stockValue,
+                                                                                                            date=datetime.today()),
+                                                targetConversion="INR",
+                                                stockExchange=stockExchange)
+                stock["Amount"]="₹ {}".format(stockAmount)
+                individualAmount[stockName]=individualAmount.get(stockName,0)+stockAmount
         return stockInfo,list(map(lambda stock:[stock,individualAmount[stock]],individualAmount))
     
     def getStockInformation(self,stockId):
@@ -618,6 +620,7 @@ class UserMutualFundInvestment(Utility):
                                                                         date=sipDate),2)
                     self.mutualFund.addNewInvestmentDetail(amount=sipAmount,units=units,mutualFundId=mutualFundId,sipId=sipId,investedDate=sipDate)
                     sipDate=sipDate+relativedelta(months=1)
+            self.mutualFund.updateSIP(columns=["SIPDate"],values=[sipDate],sipId=sipId)
 
     def getMutualFundNavOnDate(self,mutualFundData,date):
         date=self.convertStrToDate(date=date)
@@ -710,9 +713,10 @@ class UserMutualFundInvestment(Utility):
         self.logger.info("mutualFunds: {}".format(mutualFunds))
         combinedMutualFund={}
         for mutualFund in mutualFunds:
-            schemeName,schemeId=mutualFund["Scheme"].split(".")
-            mutualFund["Scheme"]=schemeName
-            combinedMutualFund[schemeName]=float(combinedMutualFund.get(schemeName,0)+float(mutualFund["Amount"]))
+            if mutualFund.get("Active"):
+                schemeName,schemeId=mutualFund["Scheme"].split(".")
+                mutualFund["Scheme"]=schemeName
+                combinedMutualFund[schemeName]=float(combinedMutualFund.get(schemeName,0)+float(mutualFund["Amount"]))
         return mutualFunds,list(map(lambda mutualFund:[mutualFund,combinedMutualFund[mutualFund]],combinedMutualFund))
 
     def getMutualFund(self,investmentId):

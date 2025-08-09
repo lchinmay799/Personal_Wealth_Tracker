@@ -111,7 +111,7 @@
                         <form method="post" action="/myinvestments/stocks/updateSIP">
                             <input type="hidden" name="investmentId" value={{combinedStocksInfo.Id}}>
                             <input type="number" id="sipAmount" name="sipAmount" placeholder="Update the SIP Amount" step="1" min="0" class="sipInfoField"><p class="commonString currency" style="color: white;">₹</p><br>
-                            <label for = "sipDate" class="calendarLabel" style="color: white;">Change SIP Date</label><input type="date" name = "sipDate"  id ="sipDate" class="sipInfoField"><br>
+                            <label for = "sipDate" class="calendarLabel" style="color: white;">Change SIP Date</label><input type="number" name = "sipDate"  id ="sipDate" class="sipInfoField" min="1" max="31" required><label for = "sipDate" class="calendarLabel" style="color: white;">of Every Month</label><br>
                             <input class = "submitButton" type="submit" value="SUBMIT">
                         </form>
                     </div>

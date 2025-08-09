@@ -19,15 +19,22 @@ logger=logger.getLogger()
 
 app=Flask(__name__)
 jwt=JWTManager(app)
-# app.config["JWT_SECRET_KEY"] = "".join(random.choices(string.ascii_letters+string.digits,k=15))
-app.config["JWT_SECRET_KEY"] = "testing_key"
-app.secret_key="testing_key"
+secret_key="".join(random.choices(string.ascii_letters+string.digits,k=15))
+app.config["JWT_SECRET_KEY"] = secret_key
+# app.config["JWT_SECRET_KEY"] = "testing_key"
+app.secret_key=secret_key
 app.config["JWT_ACCESS_TOKEN_EXPIRES"]=timedelta(hours=1)
 app.config["JWT_REFRESH_TOKEN_EXPIRES"]=timedelta(days=5)
 app.config['JWT_TOKEN_LOCATION']= "cookies"
 app.config['JWT_ACCESS_COOKIE_NAME']="access_token"
 app.config['JWT_REFRESH_COOKIE_NAME']="refresh_token"
 app.config['JWT_COOKIE_CSRF_PROTECT']=False
+
+jobs=Jobs()
+scheduler=BackgroundScheduler()
+autoRenewJob=scheduler.add_job(jobs.renewMaturedBankDeposits,'cron',hour=0,minute=5)
+addSipJob=scheduler.add_job(jobs.addNewSip,'cron',hour=9,minute=35)
+scheduler.start()
 
 @app.route('/',methods=["POST","GET"])
 def homePage():
@@ -463,7 +470,8 @@ def updateSIP(investmentType):
         utility=UserInvestments()
         investmentId=request.form.get("investmentId")
         sipAmount=request.form.get("sipAmount")
-        sipDate=request.form.get("sipDate")
+        sipDate = int(request.form.get("sipDate"))
+        sipDate = utility.getNextSipDate(sipDate=sipDate,investedDate=utility.today())
         updateInfo={}
         if sipAmount!='':
             updateInfo["SIPAmount"]=sipAmount
@@ -630,9 +638,4 @@ def markInvestmentInactive():
     return {"redirect":"/myinvestments/{}".format(investmentType)}
 
 if __name__ == '__main__':
-    jobs=Jobs()
-    scheduler=BackgroundScheduler()
-    autoRenewJob=scheduler.add_job(jobs.renewMaturedBankDeposits,'cron',hour=0,minute=5)
-    addSipJob=scheduler.add_job(jobs.addNewSip,'cron',hour=9,minute=35)
-    scheduler.start()
     app.run(debug=True,host='0.0.0.0',port=5000)
