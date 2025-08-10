@@ -336,15 +336,15 @@ class UserBankInvestment(Utility):
         for i,interestRate in deposit.get("InterestRate").items():
             startDate,endDate=self.convertStrToDate(interestRate.get("startDate")),self.convertStrToDate(interestRate.get("endDate"))
             if deposit.get('InterestType')=='SIMPLE' or (deposit.get('InterestType')=='COMPOUND' and interestCalculateDuration is not None):
-                # if currentDay>startDate and currentDay<=endDate:
-                endDate=currentDay
-                period=(endDate-startDate).days
-                currentAmount+=(currentAmount*interestRate.get('interestRate')*period/36500)
+                if currentDay>startDate:
+                    endDate=currentDay
+                    period=(endDate-startDate).days
+                    currentAmount+=(currentAmount*interestRate.get('interestRate')*period/36500)
             elif interestCalculateDuration is None:
-                # if currentDay>=startDate and currentDay<=endDate:
-                period=(currentDay-self.convertStrToDate(deposit.get("RenewalDate"))).days
-                currentAmount+=(currentAmount*interestRate.get('interestRate')*period/36500)
-                break
+                if currentDay>=startDate and currentDay<=endDate:
+                    period=(currentDay-self.convertStrToDate(deposit.get("RenewalDate"))).days
+                    currentAmount+=(currentAmount*interestRate.get('interestRate')*period/36500)
+                    break
         return round(currentAmount,2)
 
     def getUserCombinedBankDepositAmount(self,userId):
