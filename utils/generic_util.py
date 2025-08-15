@@ -337,9 +337,13 @@ class UserBankInvestment(Utility):
             startDate,endDate=self.convertStrToDate(interestRate.get("startDate")),self.convertStrToDate(interestRate.get("endDate"))
             if deposit.get('InterestType')=='SIMPLE' or (deposit.get('InterestType')=='COMPOUND' and interestCalculateDuration is not None):
                 if currentDay>startDate:
-                    endDate=currentDay
+                    if currentDay < endDate:
+                        endDate=currentDay
                     period=(endDate-startDate).days
-                    currentAmount+=(currentAmount*interestRate.get('interestRate')*period/36500)
+                    if deposit.get('InterestType')=='SIMPLE':
+                        currentAmount+=(float(deposit.get('RenewalAmount'))*period*interestRate.get('interestRate')/36500)
+                    else:
+                        currentAmount+=(currentAmount*interestRate.get('interestRate')*period/36500)
             elif interestCalculateDuration is None:
                 if currentDay>=startDate and currentDay<=endDate:
                     period=(currentDay-self.convertStrToDate(deposit.get("RenewalDate"))).days
