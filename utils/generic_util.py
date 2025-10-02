@@ -201,7 +201,7 @@ class Utility:
         return True
     
     def today(self):
-        return datetime.today()
+        return datetime.today().replace(hour=0,minute=0,second=0,microsecond=0)
     
     def getNextSipDate(self,sipDate,investedDate):
         investedDate=self.convertStrToDate(investedDate)
@@ -211,6 +211,7 @@ class Utility:
         if nextSipDate > self.today():
             nextSipDate=nextSipDate+relativedelta(months=1)
         return nextSipDate
+        
 class UserBankInvestment(Utility):
     def __init__(self):
         self.logger=logger()

@@ -15,12 +15,6 @@ class Jobs:
     def renewMaturedBankDeposits(self):
         maturityDate=self.bankDepositUtility.today()
         maturingBankDeposits=self.bankDepositUtility.getMaturingBankDepositsWithAutoRenew(maturityDate=maturityDate)
-        if maturityDate.day in [28,29,30]:
-            nextToMaturityDay=maturityDate+relativedelta(days=1)
-            if nextToMaturityDay.month!=maturityDate.month:
-                while nextToMaturityDay.day%32!=0:
-                    maturingBankDeposits.extend(self.bankDepositUtility.getMaturingBankDepositsWithAutoRenew(maturityDate=nextToMaturityDay))
-                    nextToMaturityDay=nextToMaturityDay+relativedelta(days=1)
         self.logger.info("Maturing deposits : {}".format(maturingBankDeposits))
         interestTypeConverter={
             1:"MONTHLY",
