@@ -88,6 +88,7 @@ class BankDeposits(Database):
                                                                              self.maturityDateColumn,
                                                                              self.renewalAmountColumn,
                                                                              self.renewalDateColumn,
+                                                                             self.interestDurationColumn,
                                                                              "Active",
                                                                              "WithdrawalDate"]))
         returnColumns.extend([sql.Composed(sql.Identifier(self.schema)+
@@ -111,34 +112,66 @@ class BankDeposits(Database):
             with connection.cursor(cursor_factory=RealDictCursor) as cursor:
                 response = self.executeCommand(command=command,cursor=cursor,argument=[bankInvestmentId])
                 return response.fetchall()
+        
+    def getBankDepositMaturityDate(self,investmentId):
+        command = sql.SQL("""SELECT {maturityDate} FROM {schema}.{table} JOIN {schema}.{investmentTable} ON {schema}.{table}.{bankDepositId}={schema}.{investmentTable}.{bankDepositIdColumn}
+        WHERE {schema}.{investmentTable}.{investmentId} = %s""").format(schema=sql.Identifier(self.schema),
+                                                table=sql.Identifier(self.table),
+                                                maturityDate=sql.Identifier(self.maturityDateColumn),
+                                                bankDepositId=sql.Identifier(self.idColumn),
+                                                bankDepositIdColumn=sql.Identifier("BankDepositId"),
+                                                investmentTable=sql.Identifier("INVESTMENTS"),
+                                                investmentId=sql.Identifier(self.idColumn))
+        with self.connect() as connection:
+            with connection.cursor(cursor_factory=RealDictCursor) as cursor:
+                response = self.executeCommand(command=command,cursor=cursor,argument=[investmentId])
+                return response.fetchone()
     
-    def getMaturingBankDepositsWithAutoRenew(self,maturityDate):
+    def getMaturingBankDeposits(self,maturityDate,autoRenew=None):
         columns=[sql.SQL("{schema}.{table}.{id} as {id}").format(schema=sql.Identifier(self.schema),
                                                                  table=sql.Identifier(self.table),
-                                                                 id=sql.Identifier(self.idColumn))]
+                                                                 id=sql.Identifier(self.idColumn)),
+                sql.SQL("{schema}.{table}.{id} as {investmentId}").format(schema=sql.Identifier(self.schema),
+                                                                         table=sql.Identifier("INVESTMENTS"),
+                                                                         id=sql.Identifier(self.idColumn),
+                                                                         investmentId=sql.Identifier("investmentId"))]
         columns.extend(list(map(lambda column:sql.Identifier(column),
                                                                 [self.renewalDateColumn,
                                                                 self.interestRateColumn,
                                                                 self.maturityDateColumn,
                                                                 self.interestTypeColumn,
                                                                 self.investedDateColumn,
+                                                                self.autoRenewColumn,
                                                                 self.interestDurationColumn,
                                                                 self.renewalAmountColumn,
                                                                 self.renewalDateColumn])))
         columns=sql.SQL(", ").join(columns)
-        command=sql.SQL("""SELECT {columns} FROM {schema}.{table} JOIN {schema}.{investmentsTable} ON {schema}.{table}.{id}={schema}.{investmentsTable}.{bankDepositId}
-                        WHERE {autoRenew}=%s AND {maturityDate}=%s AND {active}=%s""").format(schema=sql.Identifier(self.schema),
-                                                                                                  table=sql.Identifier(self.table),
-                                                                                                  columns=columns,
-                                                                                                  id=sql.Identifier(self.idColumn),
-                                                                                                  investmentsTable=sql.Identifier("INVESTMENTS"),
-                                                                                                  bankDepositId=sql.Identifier("BankDepositId"),
-                                                                                                  maturityDate=sql.Identifier("MaturityDate"),
-                                                                                                  autoRenew=sql.Identifier("AutoRenew"),
-                                                                                                  active=sql.Identifier("Active"))
+        if autoRenew:
+            command=sql.SQL("""SELECT {columns} FROM {schema}.{table} JOIN {schema}.{investmentsTable} ON {schema}.{table}.{id}={schema}.{investmentsTable}.{bankDepositId}
+                            WHERE {autoRenew}=%s AND {maturityDate}=%s AND {active}=%s""").format(schema=sql.Identifier(self.schema),
+                                                                                                    table=sql.Identifier(self.table),
+                                                                                                    columns=columns,
+                                                                                                    id=sql.Identifier(self.idColumn),
+                                                                                                    investmentsTable=sql.Identifier("INVESTMENTS"),
+                                                                                                    bankDepositId=sql.Identifier("BankDepositId"),
+                                                                                                    maturityDate=sql.Identifier(self.maturityDateColumn),
+                                                                                                    autoRenew=sql.Identifier(self.autoRenewColumn),
+                                                                                                    active=sql.Identifier("Active"))
+            arguments=[autoRenew,maturityDate,True]
+        else:
+            command=sql.SQL("""SELECT {columns} FROM {schema}.{table} JOIN {schema}.{investmentsTable} ON {schema}.{table}.{id}={schema}.{investmentsTable}.{bankDepositId}
+                            WHERE {maturityDate}=%s AND {active}=%s""").format(schema=sql.Identifier(self.schema),
+                                                                                                    table=sql.Identifier(self.table),
+                                                                                                    columns=columns,
+                                                                                                    id=sql.Identifier(self.idColumn),
+                                                                                                    investmentsTable=sql.Identifier("INVESTMENTS"),
+                                                                                                    bankDepositId=sql.Identifier("BankDepositId"),
+                                                                                                    maturityDate=sql.Identifier(self.maturityDateColumn),
+                                                                                                    active=sql.Identifier("Active"))
+            arguments=[maturityDate,True]
         with self.connect() as connection:
             with connection.cursor(cursor_factory=RealDictCursor) as cursor:
-                response=self.executeCommand(command=command,cursor=cursor,argument=[True,maturityDate,True])
+                response=self.executeCommand(command=command,cursor=cursor,argument=arguments)
                 return response.fetchall()
 
     def updateBankDeposit(self,columns,values,bankDepositId):

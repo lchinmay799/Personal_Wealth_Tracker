@@ -14,7 +14,7 @@ class Jobs:
 
     def renewMaturedBankDeposits(self):
         maturityDate=self.bankDepositUtility.today()
-        maturingBankDeposits=self.bankDepositUtility.getMaturingBankDepositsWithAutoRenew(maturityDate=maturityDate)
+        maturingBankDeposits=self.bankDepositUtility.getMaturingBankDeposits(maturityDate=maturityDate)
         self.logger.info("Maturing deposits : {}".format(maturingBankDeposits))
         interestTypeConverter={
             1:"MONTHLY",
@@ -23,6 +23,10 @@ class Jobs:
             None:"NONE"
         }
         for deposit in maturingBankDeposits:
+            autoRenew=deposit.get("AutoRenew")
+            if not autoRenew:
+                self.bankDepositUtility.bankInvestment.markInvestmentInactive(deposit.get("investmentId"),withdrawalDate=maturityDate)
+                continue
             renewalDate=deposit.get("RenewalDate")
             # uncomment below line if you want to renew old investments
             # maturityDate=deposit.get("MaturityDate")

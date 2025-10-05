@@ -634,7 +634,12 @@ def markInvestmentInactive():
     utility=UserInvestments()
     investmentId=request.json.get("InvestmentId")
     investmentType=request.json.get("InvestmentType")
-    utility.markInvestmentAsInactive(investmentId=int(investmentId))
+    withdrawalDate=utility.convertStrToDate(request.json.get("WithdrawalDate"))
+    if investmentType == "bankdeposits":
+        maturityDate = utility.getBankDepositMaturityDate(investmentId=int(investmentId))
+        if withdrawalDate > maturityDate:
+            withdrawalDate = maturityDate
+    utility.markInvestmentAsInactive(investmentId=int(investmentId),withdrawalDate=withdrawalDate)  
     return {"redirect":"/myinvestments/{}".format(investmentType)}
 
 if __name__ == '__main__':

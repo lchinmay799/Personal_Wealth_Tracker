@@ -362,6 +362,8 @@ class UserBankInvestment(Utility):
         return self.formatDeposits(bankDeposits),list(map(lambda deposit:[deposit,combinedDeposit[deposit]], combinedDeposit))
 
     def getBankDepositInfomation(self,bankInvestmentId):
+        self.logger.info("Retrieving Deposits of bankInvestmentId: {}".format(bankInvestmentId))
+        self.logger.info("all deposits: {}".format(self.bankInvestment.getBankDeposit(bankInvestmentId=bankInvestmentId)))
         bankDeposits=self.formatDeposits(self.bankInvestment.getBankDeposit(bankInvestmentId=bankInvestmentId))
         deposits={}
         for deposit in bankDeposits:
@@ -371,9 +373,9 @@ class UserBankInvestment(Utility):
         # return bankDeposits,deposits[bankInvestmentId]
         return deposits[bankInvestmentId]
     
-    def getMaturingBankDepositsWithAutoRenew(self,maturityDate):
-        return self.bankInvestment.getMaturingBankDepositsWithAutoRenew(maturityDate=maturityDate)
-    
+    def getMaturingBankDeposits(self,maturityDate,autoRenew=None):
+        return self.bankInvestment.getMaturingBankDeposits(maturityDate=maturityDate,autoRenew=autoRenew)
+
     def updateBankDeposit(self,bankDepositId,columns,values):
         self.bankInvestment.updateBankDeposit(columns=columns,values=values,bankDepositId=bankDepositId)
 class UserStockInvestment(Utility):
@@ -731,6 +733,7 @@ class UserMutualFundInvestment(Utility):
     
     def getMutualFundName(self,mutualFundId):
         return self.mutualFund.getMutualFundName(mutualFundId=mutualFundId)
+
 class UserInvestments(Utility):
     def __init__(self):
         super().__init__()
@@ -749,8 +752,13 @@ class UserInvestments(Utility):
                                       stockInvestment=stockInvestments,
                                       mutualFundInvestment=mutualFundInvestments)
     
-    def markInvestmentAsInactive(self,investmentId):
-        self.investments.markInvestmentInactive(investmentId=investmentId,withdrawalDate=self.today())
+    def markInvestmentAsInactive(self,investmentId,withdrawalDate):
+        self.logger.info("Marking investmentId: {} as inactive with withdrawalDate: {}".format(investmentId, withdrawalDate))
+        self.investments.markInvestmentInactive(investmentId=investmentId,withdrawalDate=withdrawalDate)
+
+    def getBankDepositMaturityDate(self,investmentId):
+        bankDeposit=self.bankInvestment.bankInvestment.getBankDepositMaturityDate(investmentId=investmentId)
+        return bankDeposit.get("MaturityDate")
 
     def updateSIP(self,updateInfo,investmentId,investmentType):
         investmentTypes={
