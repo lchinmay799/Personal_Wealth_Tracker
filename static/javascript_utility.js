@@ -418,9 +418,20 @@ function createVestingChart(locator,date,units,vestingLineChart=null) {
 }
 
 function markInvestmentAsInactive(checkbox,id,investmentType) {
-    if (checkbox.value=='on'){
-        if (confirm("Please Confirm if you wish to mark this Investment as Inactive"))
-        {
+    if (checkbox.value=='on' && checkbox.checked) {
+        const today = new Date().toISOString().split('T')[0];
+        const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+        withdrawalDate = prompt("Please enter the Withdrawal Date (YYYY-MM-DD):", today);
+        if (withdrawalDate != null) {
+            // Validate the date format (basic validation)
+            WithdrawalDate = new Date(withdrawalDate).toISOString().split('T')[0];
+            console.log(WithdrawalDate);
+            console.log(today);
+            console.log(WithdrawalDate > today);
+            if (!datePattern.test(withdrawalDate) || WithdrawalDate > today) {
+                alert("Invalid Date Entered. Please enter a Valid Date in YYYY-MM-DD.");
+                return;
+            }
             return fetch('/myinvestments/setInactive',{
                 headers:{
                     'Content-Type':'application/json'
@@ -428,7 +439,8 @@ function markInvestmentAsInactive(checkbox,id,investmentType) {
                 method:"POST",
                 body:JSON.stringify({
                     "InvestmentId":id,
-                    "InvestmentType":investmentType
+                    "InvestmentType":investmentType,
+                    "WithdrawalDate":withdrawalDate
                 })
             }).then(response => {
                 if (!response.ok) {
