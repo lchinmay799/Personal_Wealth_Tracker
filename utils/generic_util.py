@@ -723,7 +723,9 @@ class UserMutualFundInvestment(Utility):
             if mutualFund.get("Active"):
                 schemeName,schemeId=mutualFund["Scheme"].split(".")
                 mutualFund["Scheme"]=schemeName
-                combinedMutualFund[schemeName]=float(combinedMutualFund.get(schemeName,0)+float(mutualFund["Amount"]))
+                isValid,mutualFundInfo=self.searchMutualFund(schemeId=schemeId)
+                combinedMutualFund[schemeName]=combinedMutualFund.get(schemeName,0)+float(float(mutualFund["Units"])*self.getMutualFundNavOnDate(mutualFundData=mutualFundInfo,
+                                                                                                                                         date=self.today()))
         return mutualFunds,list(map(lambda mutualFund:[mutualFund,combinedMutualFund[mutualFund]],combinedMutualFund))
 
     def getMutualFund(self,investmentId):

@@ -7,12 +7,10 @@ from jwt.exceptions import InvalidSignatureError,ExpiredSignatureError
 from flask import Flask,render_template,request,redirect,url_for,make_response,flash
 from datetime import timedelta
 from flask_jwt_extended import JWTManager,unset_jwt_cookies,jwt_required
-from apscheduler.schedulers.background import BackgroundScheduler
 
 from utils.logger import logger
 from utils.database.account_utility import UserAccount
 from utils.generic_util import UserSession,UserBankInvestment,UserStockInvestment,UserMutualFundInvestment,UserInvestments
-from utils.scheduled_jobs import Jobs
 
 logger=logger()
 logger=logger.getLogger()
@@ -29,12 +27,6 @@ app.config['JWT_TOKEN_LOCATION']= "cookies"
 app.config['JWT_ACCESS_COOKIE_NAME']="access_token"
 app.config['JWT_REFRESH_COOKIE_NAME']="refresh_token"
 app.config['JWT_COOKIE_CSRF_PROTECT']=False
-
-jobs=Jobs()
-scheduler=BackgroundScheduler()
-autoRenewJob=scheduler.add_job(jobs.renewMaturedBankDeposits,'cron',hour=0,minute=5)
-addSipJob=scheduler.add_job(jobs.addNewSip,'cron',hour=9,minute=35)
-scheduler.start()
 
 @app.route('/',methods=["POST","GET"])
 def homePage():
