@@ -208,7 +208,7 @@ class Utility:
         day,month,year=investedDate.day,investedDate.month,investedDate.year
         nextSipDate="{}-{}-{}".format(year,month,sipDate)
         nextSipDate=self.convertStrToDate(date=nextSipDate)
-        if nextSipDate > self.today():
+        if nextSipDate <= self.today():
             nextSipDate=nextSipDate+relativedelta(months=1)
         return nextSipDate
         

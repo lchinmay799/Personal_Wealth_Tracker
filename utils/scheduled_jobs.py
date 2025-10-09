@@ -69,7 +69,7 @@ class Jobs:
         self.logger.info("SIPS: {}".format(sips))
         for sip in sips:
             sipAmount=sip.get("SIPAmount")
-            nextSipDate=self.stockUtility.getNextSipDate(sipDate=sipDate.day,investedDate=self.stockUtility.today())
+            nextSipDate=sipDate+relativedelta(months=1)
             if sip.get("StockId") is not None:
                 if self.stockUtility.getInvestmentStatus(stockId=int(sip.get("StockId"))).get("Active"):
                     stockName=self.stockUtility.getStockName(stockId=int(sip.get("StockId")))
