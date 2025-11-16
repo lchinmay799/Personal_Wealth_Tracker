@@ -180,18 +180,18 @@ class Utility:
             "SHH":"CNY",
             "SHZ":"CNY"
         }
-        url="{}/{}/pair/{}/{}/{}".format(self.currencyExchangeConfig.get("base_url"),self.currencyExchangeConfig.get("api_key"),
-                                         stockExchange_exchangeRate_mapping.get(stockExchange),targetConversion,amount)
+        url="{}/{}/pair/{}/{}".format(self.currencyExchangeConfig.get("base_url"),self.currencyExchangeConfig.get("api_key"),
+                                         stockExchange_exchangeRate_mapping.get(stockExchange),targetConversion)
         method="GET"
         try:
-            cache_key,timeout = self.createCurrencyExchangeCacheKey(fromCurrency = stockExchange_exchangeRate_mapping.get(stockExchange),toCurrency = targetConversion, amount=amount)
+            cache_key,timeout = self.createCurrencyExchangeCacheKey(fromCurrency = stockExchange_exchangeRate_mapping.get(stockExchange),toCurrency = targetConversion)
             if Cache.cache.has(cache_key):
-                return Cache.cache.get(cache_key)
+                return Cache.cache.get(cache_key)*amount
             session=APIRequest()
             response=session.make_request(method=method,url=url)
             if response.status_code == 200:
-                Cache.cache.set(cache_key,response.json().get("conversion_result"),timeout)
-                return response.json().get("conversion_result")
+                Cache.cache.set(cache_key,response.json().get("conversion_rate"),timeout)
+                return response.json().get("conversion_rate")*amount
             else:
                 return None
         except Exception as e:
@@ -264,11 +264,10 @@ class Utility:
         cache_key = "mutualFund_{}".format(mutualFundId)
         return cache_key,timeout
 
-    def createCurrencyExchangeCacheKey(self,fromCurrency,toCurrency,amount):
-        self.logger.info("FromCurrency: {} \n toCurrenct: {}".format(fromCurrency,toCurrency))
+    def createCurrencyExchangeCacheKey(self,fromCurrency,toCurrency):
         now=datetime.now()
         timeout=((now+relativedelta(days=1)).replace(hour=0,minute=0,second=0,microsecond=0)-now).seconds
-        cache_key = "currency_{}_{}_{}".format(fromCurrency,toCurrency,amount)
+        cache_key = "currency_{}_{}".format(fromCurrency,toCurrency)
         return cache_key,timeout
 
 class UserBankInvestment(Utility):
@@ -695,6 +694,8 @@ class UserMutualFundInvestment(Utility):
                                                                         date=sipDate),2)
                     self.mutualFund.addNewInvestmentDetail(amount=sipAmount,units=units,mutualFundId=mutualFundId,sipId=sipId,investedDate=sipDate)
                     sipDate=sipDate+relativedelta(months=1)
+            else:
+                self.logger.error("Mutual Fund Info not found for schemeId: {}".format(schemeId))
             self.mutualFund.updateSIP(columns=["SIPDate"],values=[sipDate],sipId=sipId)
 
     def getMutualFundNavOnDate(self,mutualFundData,date):

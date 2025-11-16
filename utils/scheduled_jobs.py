@@ -70,6 +70,11 @@ class Jobs:
         for sip in sips:
             sipAmount=sip.get("SIPAmount")
             nextSipDate=sipDate+relativedelta(months=1)
+            weekDay = nextSipDate.weekday()
+            if weekDay == 5:  # Saturday
+                nextSipDate += relativedelta(days=2)  # Move to Monday
+            elif weekDay == 6:  # Sunday
+                nextSipDate += relativedelta(days=1)  # Move to Monday
             if sip.get("StockId") is not None:
                 if self.stockUtility.getInvestmentStatus(stockId=int(sip.get("StockId"))).get("Active"):
                     stockName=self.stockUtility.getStockName(stockId=int(sip.get("StockId")))
