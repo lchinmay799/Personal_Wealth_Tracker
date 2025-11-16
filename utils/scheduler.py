@@ -1,11 +1,12 @@
-import redis
+import json
 from utils.scheduled_jobs import Jobs
 from apscheduler.schedulers.background import BackgroundScheduler
+from utils.generic_util import Redis
 
-redis_client = redis.Redis(host='localhost', port=6379, db=0)
+redis = Redis()
 
 def post_fork(server, worker):
-    acquire_lock=redis_client.set('scheduler_lock', 1, nx=True, ex=60)
+    acquire_lock=redis.redis_client.set('scheduler_lock', 1, nx=True, ex=60)
     if acquire_lock:
         jobs=Jobs()
         worker.scheduler=BackgroundScheduler()
@@ -16,4 +17,4 @@ def post_fork(server, worker):
 def worker_exit(server, worker):
     if hasattr(worker, 'scheduler') and worker.scheduler.running:
         worker.scheduler.shutdown(wait=True)
-        redis_client.delete('scheduler_lock')
+        redis.redis_client.delete('scheduler_lock')

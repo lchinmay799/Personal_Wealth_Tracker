@@ -3,9 +3,12 @@ from flask import request
 import json
 import random
 import math
+import redis
 from collections import defaultdict
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
+from flask_caching import Cache as flaskCache
+
 from utils.database.investment_utility import BankDeposits,Stock,MutualFund
 from utils.database.common_utility import Database
 from utils.request_util import APIRequest
@@ -86,6 +89,39 @@ class UserSession:
         self.logger.info("key {}".format(decode_token(token).get(key)))
         return decode_token(token).get(key)
 
+class Cache:
+    cache = None
+
+    @classmethod
+    def setup_cache(cls):
+        with open('utils/config.json') as f:
+            config=json.load(f)
+            redisConfig = config["personal_wealth_tracker"]["redis"]
+
+        CACHE_REDIS_HOST=redisConfig.get("host")
+        CACHE_REDIS_PASSWORD=redisConfig.get("password_encoded")
+        CACHE_REDIS_PORT=redisConfig.get("port")
+        CACHE_REDIS_DB=redisConfig.get("cache_db")
+        CACHE_REDIS_USER=redisConfig.get("username")
+        cache_config={
+            "CACHE_TYPE":"RedisCache",
+            "CACHE_DEFAULT_TIMEOUT":24*60*60,
+            "CACHE_REDIS_URL":"redis://{}:{}@{}:{}/{}".format(CACHE_REDIS_USER,CACHE_REDIS_PASSWORD,CACHE_REDIS_HOST,CACHE_REDIS_PORT,CACHE_REDIS_DB)
+        }
+        cls.cache=flaskCache(config=cache_config)
+
+class Redis:
+    def __init__(self):
+        with open('utils/config.json') as f:
+            config=json.load(f)
+            redisConfig = config["personal_wealth_tracker"]["redis"]
+        
+        self.redis_client = redis.Redis(host=redisConfig.get("host"), 
+                    port=redisConfig.get("port"), 
+                    db=redisConfig.get("scheduler_db"),
+                    username=redisConfig.get("username"), 
+                    password=redisConfig.get("password"))
+    
 class Utility:
     def __init__(self):
         super().__init__()
@@ -148,9 +184,13 @@ class Utility:
                                          stockExchange_exchangeRate_mapping.get(stockExchange),targetConversion,amount)
         method="GET"
         try:
+            cache_key,timeout = self.createCurrencyExchangeCacheKey(fromCurrency = stockExchange_exchangeRate_mapping.get(stockExchange),toCurrency = targetConversion, amount=amount)
+            if Cache.cache.has(cache_key):
+                return Cache.cache.get(cache_key)
             session=APIRequest()
             response=session.make_request(method=method,url=url)
             if response.status_code == 200:
+                Cache.cache.set(cache_key,response.json().get("conversion_result"),timeout)
                 return response.json().get("conversion_result")
             else:
                 return None
@@ -211,7 +251,26 @@ class Utility:
         if nextSipDate <= self.today():
             nextSipDate=nextSipDate+relativedelta(months=1)
         return nextSipDate
-        
+
+    def createStockCacheDetails(self,stockName):
+        now=datetime.now()
+        timeout=((now+relativedelta(days=1)).replace(hour=9,minute=31,second=0,microsecond=0)-now).seconds
+        cache_key = "stock_{}".format(stockName)
+        return cache_key,timeout
+
+    def createMutualFundCacheDetails(self,mutualFundId):
+        now=datetime.now()
+        timeout=((now+relativedelta(days=1)).replace(hour=1,minute=31,second=0,microsecond=0)-now).seconds
+        cache_key = "mutualFund_{}".format(mutualFundId)
+        return cache_key,timeout
+
+    def createCurrencyExchangeCacheKey(self,fromCurrency,toCurrency,amount):
+        self.logger.info("FromCurrency: {} \n toCurrenct: {}".format(fromCurrency,toCurrency))
+        now=datetime.now()
+        timeout=((now+relativedelta(days=1)).replace(hour=0,minute=0,second=0,microsecond=0)-now).seconds
+        cache_key = "currency_{}_{}_{}".format(fromCurrency,toCurrency,amount)
+        return cache_key,timeout
+
 class UserBankInvestment(Utility):
     def __init__(self):
         self.logger=logger()
@@ -378,6 +437,7 @@ class UserBankInvestment(Utility):
 
     def updateBankDeposit(self,bankDepositId,columns,values):
         self.bankInvestment.updateBankDeposit(columns=columns,values=values,bankDepositId=bankDepositId)
+
 class UserStockInvestment(Utility):
     def __init__(self):
         super().__init__()
@@ -415,12 +475,16 @@ class UserStockInvestment(Utility):
 
         method="GET"
         try:
+            cache_key,timeout = self.createStockCacheDetails(stockName = stockName)
+            if Cache.cache.has(cache_key):
+                return True,Cache.cache.get(cache_key)
             session=APIRequest()
             response=session.make_request(method=method,query_params=query_params,url=url)
             if response.status_code == 200:
                 stockInfo=response.json()
                 # if "Meta Data" not in stockInfo:
                 #     return False,None
+                Cache.cache.set(cache_key,stockInfo,timeout)
                 return True,stockInfo
             return False,None
         except:
@@ -599,6 +663,9 @@ class UserMutualFundInvestment(Utility):
         url="{}/{}".format(self.mutualFundConfig["base_url"],schemeId)
         method="GET"
         try:
+            cache_key,timeout = self.createMutualFundCacheDetails(mutualFundId=schemeId)
+            if Cache.cache.has(cache_key):
+                return True,Cache.cache.get(cache_key)
             session=APIRequest()
             response=session.make_request(url=url,method=method)
             if response.status_code==200:
@@ -606,6 +673,7 @@ class UserMutualFundInvestment(Utility):
                 if len(mutualFundInfo)==0:
                     return False,None
                 else:
+                    Cache.cache.set(cache_key,mutualFundInfo,timeout)
                     return True,mutualFundInfo
         except Exception as e:
             self.logger.info("Failed to get the Mutual Fund Info. {}".format(e))

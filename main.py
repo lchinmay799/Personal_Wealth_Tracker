@@ -10,23 +10,29 @@ from flask_jwt_extended import JWTManager,unset_jwt_cookies,jwt_required
 
 from utils.logger import logger
 from utils.database.account_utility import UserAccount
-from utils.generic_util import UserSession,UserBankInvestment,UserStockInvestment,UserMutualFundInvestment,UserInvestments
+from utils.generic_util import UserSession,UserBankInvestment,UserStockInvestment,UserMutualFundInvestment,UserInvestments,Cache
 
 logger=logger()
 logger=logger.getLogger()
 
 app=Flask(__name__)
 jwt=JWTManager(app)
+jwt_config={
+    "JWT_SECRET_KEY":"testing_key",
+    "JWT_ACCESS_TOKEN_EXPIRES":timedelta(hours=1),
+    "JWT_REFRESH_TOKEN_EXPIRES":timedelta(days=5),
+    "JWT_TOKEN_LOCATION": "cookies",
+    "JWT_ACCESS_COOKIE_NAME": "access_token",
+    "JWT_REFRESH_COOKIE_NAME": "refresh_token",
+    "JWT_COOKIE_CSRF_PROTECT":False
+}
 # secret_key="".join(random.choices(string.ascii_letters+string.digits,k=15))
 # app.config["JWT_SECRET_KEY"] = secret_key
-app.config["JWT_SECRET_KEY"] = "testing_key"
 app.secret_key="testing_key"
-app.config["JWT_ACCESS_TOKEN_EXPIRES"]=timedelta(hours=1)
-app.config["JWT_REFRESH_TOKEN_EXPIRES"]=timedelta(days=5)
-app.config['JWT_TOKEN_LOCATION']= "cookies"
-app.config['JWT_ACCESS_COOKIE_NAME']="access_token"
-app.config['JWT_REFRESH_COOKIE_NAME']="refresh_token"
-app.config['JWT_COOKIE_CSRF_PROTECT']=False
+app.config.update(jwt_config)
+
+Cache.setup_cache()
+Cache.cache.init_app(app)
 
 @app.route('/',methods=["POST","GET"])
 def homePage():
