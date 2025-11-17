@@ -252,10 +252,10 @@ class Utility:
             nextSipDate=nextSipDate+relativedelta(months=1)
         return nextSipDate
 
-    def createStockCacheDetails(self,stockName):
+    def createStockCacheDetails(self,stockName,period="yearly"):
         now=datetime.now()
         timeout=((now+relativedelta(days=1)).replace(hour=9,minute=31,second=0,microsecond=0)-now).seconds
-        cache_key = "stock_{}".format(stockName)
+        cache_key = "stock_{}_{}".format(stockName, period)
         return cache_key,timeout
 
     def createMutualFundCacheDetails(self,mutualFundId):
@@ -474,7 +474,7 @@ class UserStockInvestment(Utility):
 
         method="GET"
         try:
-            cache_key,timeout = self.createStockCacheDetails(stockName = stockName)
+            cache_key,timeout = self.createStockCacheDetails(stockName = stockName,period="{}_{}".format(period,outputSize))
             if Cache.cache.has(cache_key):
                 return True,Cache.cache.get(cache_key)
             session=APIRequest()
