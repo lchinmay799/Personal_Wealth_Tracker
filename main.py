@@ -18,7 +18,7 @@ logger=logger.getLogger()
 app=Flask(__name__)
 jwt=JWTManager(app)
 jwt_config={
-    "JWT_SECRET_KEY":"testing_key",
+    "JWT_SECRET_KEY":"x5rFDbHmPt5P9Kx",
     "JWT_ACCESS_TOKEN_EXPIRES":timedelta(hours=1),
     "JWT_REFRESH_TOKEN_EXPIRES":timedelta(days=5),
     "JWT_TOKEN_LOCATION": "cookies",
@@ -28,7 +28,7 @@ jwt_config={
 }
 # secret_key="".join(random.choices(string.ascii_letters+string.digits,k=15))
 # app.config["JWT_SECRET_KEY"] = secret_key
-app.secret_key="testing_key"
+app.secret_key="".join(random.choices(string.ascii_letters+string.digits,k=15))
 app.config.update(jwt_config)
 
 Cache.setup_cache()
