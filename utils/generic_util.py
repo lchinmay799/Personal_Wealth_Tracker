@@ -563,7 +563,7 @@ class UserStockInvestment(Utility):
                            "Active":True,
                            "Id":None}
         stockName = stockInfo[0].get("StockName")
-        valid,stockValue=self.searchStockInfo(stockName=stockName,period="daily",outputSize="full")
+        valid,stockValue=self.searchStockInfo(stockName=stockName,period="daily",outputSize="compact")
         for stock in stockInfo:
             combinedStockInfo["Amount"]+=float(stock.get("Amount",0))
             combinedStockInfo["Amount"]+=float(stock.get("SIPAmount",0))
@@ -582,8 +582,7 @@ class UserStockInvestment(Utility):
             stock["InvestedDate"]=self.convertDateToStr(stock["InvestedDate"])
             combinedStockInfo["investmentInfo"][stock["InvestedDate"]][0]+=float(stock["Units"])
             combinedStockInfo["investmentInfo"][stock["InvestedDate"]][1]+=float(stock["Amount"])
-            combinedStockInfo["investmentInfo"][stock["InvestedDate"]][2]+=(float(stock["Units"])*self.getStockAmountOnDate(stockInfo=stockValue,
-                                                                                                                          date=stock["InvestedDate"]))
+            combinedStockInfo["investmentInfo"][stock["InvestedDate"]][2]+=float(stock["Amount"])
 
             combinedStockInfo["investmentInfo"]=dict(combinedStockInfo["investmentInfo"])
 
